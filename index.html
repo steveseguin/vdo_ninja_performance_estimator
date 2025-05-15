@@ -6,12 +6,19 @@
     <title>VDO.Ninja Performance Estimator</title>
     <style>
         :root {
-            --primary-color: #3a86ff;
-            --secondary-color: #ff006e;
-            --background-color: #f8f9fa;
-            --card-color: #ffffff;
-            --text-color: #212529;
-            --border-color: #dee2e6;
+            --primary-color: #6d5dfc;
+            --secondary-color: #ff5277;
+            --background-color: #121212;
+            --card-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333333;
+            --input-bg: #2d2d2d;
+            --button-hover: #5a4de6;
+            --tab-bg: #252525;
+            --tooltip-bg: #3d3d3d;
+            --meter-low: #4caf50;
+            --meter-medium: #ff9800;
+            --meter-high: #f44336;
         }
 
         body {
@@ -228,6 +235,181 @@
             visibility: visible;
             opacity: 1;
         }
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 20px;
+}
+
+.card {
+    background-color: var(--card-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+input[type="number"],
+select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+button:hover {
+    background-color: var(--button-hover);
+    transform: translateY(-2px);
+}
+
+.tab {
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background-color: var(--tab-bg);
+    border-radius: 8px 8px 0 0;
+}
+
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    color: var(--text-color);
+}
+
+.tab button:hover {
+    background-color: #333333;
+}
+
+.tab button.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.tabcontent {
+    display: none;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    animation: fadeEffect 1s;
+    background-color: var(--card-color);
+}
+
+.result-card {
+    border-left: 4px solid var(--primary-color);
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: var(--card-color);
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.warning {
+    border-left-color: var(--secondary-color);
+}
+
+.meter-container {
+    width: 100%;
+    background-color: #333333;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    height: 22px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.meter {
+    height: 100%;
+    border-radius: 4px;
+    text-align: center;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 22px;
+    transition: width 0.5s ease-in-out;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.meter-low {
+    background-color: var(--meter-low);
+}
+
+.meter-medium {
+    background-color: var(--meter-medium);
+}
+
+.meter-high {
+    background-color: var(--meter-high);
+}
+
+.info-text {
+    font-style: italic;
+    color: #aaaaaa;
+    font-size: 0.9rem;
+}
+
+.tooltip .tooltiptext {
+    background-color: var(--tooltip-bg);
+    color: #fff;
+    border: 1px solid var(--border-color);
+}
+
+.tooltip .tooltiptext::after {
+    border-color: var(--tooltip-bg) transparent transparent transparent;
+}
+
+h1 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+}
+
+/* Add these new styles for better form controls */
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(109, 93, 252, 0.25);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Improve preset buttons layout */
+.preset-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.preset-container button {
+    flex: 1 1 auto;
+    min-width: 150px;
+}
     </style>
 </head>
 <body>
@@ -352,7 +534,7 @@
             <div class="card">
                 <h2>Configuration Presets</h2>
                 <p>Start with a recommended preset configuration based on common use cases:</p>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <div class="preset-container">
                     <button onclick="applyPreset('basic-streaming')">Basic Streaming</button>
                     <button onclick="applyPreset('gaming-broadcast')">Gaming Broadcast</button>
                     <button onclick="applyPreset('group-call')">Group Video Call</button>
