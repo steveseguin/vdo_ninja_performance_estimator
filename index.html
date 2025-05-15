@@ -839,8 +839,9 @@ button:active {
             });
             
             // Initialize defaults
-            updateBasedOnOperationMode(document.getElementById('operation-mode').value);
+            
             updateBitrateBasedOnResolution(document.getElementById('resolution').value);
+			updateBasedOnOperationMode(document.getElementById('operation-mode').value);
         });
         
         function updateBasedOnOperationMode(mode) {
@@ -1420,7 +1421,7 @@ button:active {
             document.getElementById('scene-complexity').value = preset['scene-complexity'];
             
             // Update any dependent fields
-            updateBasedOnOperationMode(preset['operation-mode']);
+            updateBasedOnOperationMode(document.getElementById('operation-mode').value);
             
             // Show feedback to user
             alert(`Applied "${presetName}" preset configuration.`);
