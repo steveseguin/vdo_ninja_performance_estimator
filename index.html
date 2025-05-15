@@ -425,6 +425,17 @@ button:active {
         </div>
 
         <div id="SystemConfig" class="tabcontent" style="display: block;">
+			<div class="card">
+					<h2>Configuration Presets</h2>
+					<p>Start with a recommended preset configuration based on common use cases:</p>
+					<div class="preset-container">
+						<button onclick="applyPreset('basic-streaming')">Basic Streaming</button>
+						<button onclick="applyPreset('gaming-broadcast')">Gaming Broadcast</button>
+						<button onclick="applyPreset('group-call')">Group Video Call</button>
+						<button onclick="applyPreset('low-resource')">Low Resource Mode</button>
+						<button onclick="applyPreset('high-quality')">High Quality Mode</button>
+					</div>
+				</div>
             <div class="card">
                 <h2>Hardware Specifications</h2>
                 <div class="grid">
@@ -538,18 +549,6 @@ button:active {
                             <input type="number" id="cpu-usage" min="0" max="100" value="20" step="5">
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Configuration Presets</h2>
-                <p>Start with a recommended preset configuration based on common use cases:</p>
-                <div class="preset-container">
-                    <button onclick="applyPreset('basic-streaming')">Basic Streaming</button>
-                    <button onclick="applyPreset('gaming-broadcast')">Gaming Broadcast</button>
-                    <button onclick="applyPreset('group-call')">Group Video Call</button>
-                    <button onclick="applyPreset('low-resource')">Low Resource Mode</button>
-                    <button onclick="applyPreset('high-quality')">High Quality Mode</button>
                 </div>
             </div>
 
