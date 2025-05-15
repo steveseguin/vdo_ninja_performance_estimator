@@ -6,7 +6,7 @@ A web-based tool to estimate if your system can handle [VDO.Ninja](https://vdo.n
 
 **Live Demo:** [https://steveseguin.github.io/vdo_ninja_performance_estimator/](https://steveseguin.github.io/vdo_ninja_performance_estimator/)
 
-![VDO.Ninja Performance Estimator Screenshot](https://github.com/steveseguin/vdo_ninja_performance_estimator/raw/main/screenshot.png)
+![image](https://github.com/user-attachments/assets/fc6bcdec-dc6e-46e7-bf1b-d6925b9ab313)
 
 ## Features
 
