@@ -1,7 +1,6 @@
 # VDO.Ninja Performance Estimator
 
 [![GitHub stars](https://img.shields.io/github/stars/steveseguin/vdo_ninja_performance_estimator)](https://github.com/steveseguin/vdo_ninja_performance_estimator/stargazers)
-[![GitHub license](https://img.shields.io/github/license/steveseguin/vdo_ninja_performance_estimator)](https://github.com/steveseguin/vdo_ninja_performance_estimator/blob/main/LICENSE)
 
 A web-based tool to estimate if your system can handle [VDO.Ninja](https://vdo.ninja) sessions based on your hardware specifications and configuration.
 
