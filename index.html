@@ -582,8 +582,8 @@ button:active {
                             <select id="resolution">
                                 <option value="360">360p (640x360)</option>
                                 <option value="480">480p (854x480)</option>
-                                <option value="720" selected>720p (1280x720)</option>
-                                <option value="1080">1080p (1920x1080)</option>
+                                <option value="720">720p (1280x720)</option>
+                                <option value="1080" selected>1080p (1920x1080)</option>
                                 <option value="1440">1440p (2560x1440)</option>
                                 <option value="4k">4K (3840x2160)</option>
                             </select>
@@ -598,8 +598,8 @@ button:active {
                             </label>
                             <select id="framerate">
                                 <option value="15">15 FPS</option>
-                                <option value="30" selected>30 FPS</option>
-                                <option value="60">60 FPS</option>
+                                <option value="30">30 FPS</option>
+                                <option value="60" selected>60 FPS</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -637,7 +637,7 @@ button:active {
                                     <span class="tooltiptext">Higher bitrates improve quality but require more bandwidth and processing.</span>
                                 </span>
                             </label>
-                            <input type="number" id="bitrate" min="500" max="20000" value="2500" step="500">
+                            <input type="number" id="bitrate" min="500" max="20000" value="6000" step="500">
                         </div>
                     </div>
                     <div>
@@ -835,28 +835,39 @@ button:active {
         });
         
         function updateBasedOnOperationMode(mode) {
-            const connectionsInput = document.getElementById('connections');
-            const bitrateInput = document.getElementById('bitrate');
-            
-            if (mode === 'p2p') {
-                // P2P typically has fewer connections due to resource requirements
-                connectionsInput.value = Math.min(parseInt(connectionsInput.value), 5);
-                connectionsInput.max = 10;
-                bitrateInput.value = 2500;
-            } else if (mode === 'group') {
-                // Group rooms can handle more but still limited
-                connectionsInput.max = 20;
-                bitrateInput.value = 2000;
-            } else if (mode === 'broadcast') {
-                // Broadcasting can support many viewers
-                connectionsInput.max = 50;
-                bitrateInput.value = 3000;
-            } else if (mode === 'meshcast') {
-                // Meshcast supports many viewers
-                connectionsInput.max = 100;
-                bitrateInput.value = 3500;
-            }
-        }
+			const connectionsInput = document.getElementById('connections');
+			const bitrateInput = document.getElementById('bitrate');
+			const resolutionSelect = document.getElementById('resolution');
+			const framerateSelect = document.getElementById('framerate');
+			const codecSelect = document.getElementById('codec');
+			
+			if (mode === 'p2p') {
+				// P2P typically has fewer connections due to resource requirements
+				connectionsInput.value = Math.min(parseInt(connectionsInput.value), 5);
+				connectionsInput.max = 10;
+				bitrateInput.value = 2500;
+			} else if (mode === 'group') {
+				// Group rooms with specific values
+				connectionsInput.max = 20;
+				bitrateInput.value = 550;
+				resolutionSelect.value = '480'; // Closest to 540p in the existing options
+				framerateSelect.value = '60';
+			} else if (mode === 'broadcast') {
+				// Broadcasting with specific values
+				connectionsInput.max = 50;
+				bitrateInput.value = 1200;
+				resolutionSelect.value = '720';
+				framerateSelect.value = '60';
+			} else if (mode === 'meshcast') {
+				// Meshcast with specific values
+				connectionsInput.max = 100;
+				bitrateInput.value = 2500;
+				resolutionSelect.value = '1080';
+				framerateSelect.value = '60';
+				codecSelect.value = 'h264';
+			}
+		}
+		
         function toggleDetailsView() {
 			const detailsContainer = document.getElementById('process-details');
 			const button = document.getElementById('show-details-btn');
@@ -910,6 +921,7 @@ button:active {
 			const resolutionValues = {
 				'360': { width: 640, height: 360 },
 				'480': { width: 854, height: 480 },
+				'540': { width: 960, height: 540 },
 				'720': { width: 1280, height: 720 },
 				'1080': { width: 1920, height: 1080 },
 				'1440': { width: 2560, height: 1440 },
@@ -920,6 +932,7 @@ button:active {
 			const baseCpuUnitsPerStream = {
 				'360': { '15': 0.6, '30': 1.0, '60': 1.8 },
 				'480': { '15': 1.0, '30': 1.5, '60': 2.5 },
+				'540': { '15': 1.25, '30': 2.0, '60': 3.2 },
 				'720': { '15': 1.5, '30': 2.5, '60': 4.0 },  // Adjusted values to match the updated calculations
 				'1080': { '15': 2.5, '30': 4.0, '60': 6.5 },
 				'1440': { '15': 4.0, '30': 6.5, '60': 10.0 },
@@ -1486,7 +1499,7 @@ button:active {
 			// Rest of the function remains the same
 			const codecCpuMultiplier = {
 				'vp8': 1.0,
-				'h264': 1.0,
+				'h264': 0.95,
 				'vp9': 1.8,
 				'av1': 2.5
 			}[codec];
