@@ -460,21 +460,23 @@ button:active {
                                 </span>
                             </label>
                             <select id="cpu">
-                                <optgroup label="Laptop">
+								<optgroup label="Laptop">
 									<option value="laptop-low">2-4 cores (older gen, i3/Ryzen 3)</option>
 									<option value="laptop-mid">4-6 cores (mid-gen, i5/Ryzen 5)</option>
 									<option value="laptop-high">6-8 cores (newer gen, i7/Ryzen 7)</option>
-									<option value="laptop-premium">8+ cores (i9/Ryzen 9)</option>
+									<option value="laptop-premium">8-10 cores (i9/Ryzen 9)</option>
 								</optgroup>
 								<optgroup label="Desktop">
 									<option value="desktop-low">4 cores (older gen, i3/Ryzen 3)</option>
 									<option value="desktop-mid" selected>6 cores (mid-gen, i5/Ryzen 5)</option>
 									<option value="desktop-high">8 cores (newer gen, i7/Ryzen 7)</option>
-									<option value="desktop-premium">12-16 cores (i9/Ryzen 9)</option>
-									<option value="desktop-hedt">16-32 cores (Threadripper/HEDT)</option>
+									<option value="desktop-premium-12">12 cores (i9/Ryzen 9)</option>
+									<option value="desktop-premium-16">16 cores (high-end i9/Ryzen 9)</option>
+									<option value="desktop-hedt-16">16-24 cores (Entry Threadripper/HEDT)</option>
+									<option value="desktop-hedt-32">24-32 cores (High-end Threadripper)</option>
 									<option value="desktop-workstation">32+ cores (Threadripper Pro/Xeon)</option>
 								</optgroup>
-                            </select>
+							</select>
                         </div>
                         <div class="form-group">
                             <label for="gpu">GPU
@@ -927,8 +929,10 @@ button:active {
 				'desktop-low': 0.45,
 				'desktop-mid': 0.83,
 				'desktop-high': 1.1,
-				'desktop-premium': 1.67,
-				'desktop-hedt': 2.5,
+				'desktop-premium-12': 1.43,
+				'desktop-premium-16': 1.67,
+				'desktop-hedt-16': 2.0,
+				'desktop-hedt-32': 2.5,
 				'desktop-workstation': 4.0
 			}[cpu];
 
@@ -941,8 +945,10 @@ button:active {
 				'desktop-low': 2.2,
 				'desktop-mid': 1.2,
 				'desktop-high': 0.9,
-				'desktop-premium': 0.6,
-				'desktop-hedt': 0.4,
+				'desktop-premium-12': 0.7,
+				'desktop-premium-16': 0.6,
+				'desktop-hedt-16': 0.5,
+				'desktop-hedt-32': 0.4,
 				'desktop-workstation': 0.25
 			}[cpu];
 			
@@ -1001,8 +1007,10 @@ button:active {
 				'desktop-low': 20,
 				'desktop-mid': 12,
 				'desktop-high': 9,
-				'desktop-premium': 7,
-				'desktop-hedt': 5,
+				'desktop-premium-12': 8,
+				'desktop-premium-16': 7,
+				'desktop-hedt-16': 6,
+				'desktop-hedt-32': 5,
 				'desktop-workstation': 3
 			}[cpu];
 			
@@ -1418,7 +1426,7 @@ button:active {
 				},
 				'high-quality': {
 					// System configuration
-					'cpu': 'desktop-premium',
+					'cpu': 'desktop-premium-16', // Updated from desktop-premium
 					'gpu': 'high',
 					'ram': 32,
 					'upload': 25,
@@ -1570,8 +1578,10 @@ button:active {
 				'desktop-low': 2.2,
 				'desktop-mid': 1.2,
 				'desktop-high': 0.9,
-				'desktop-premium': 0.6,
-				'desktop-hedt': 0.4,
+				'desktop-premium-12': 0.7,
+				'desktop-premium-16': 0.6,
+				'desktop-hedt-16': 0.5,
+				'desktop-hedt-32': 0.4,
 				'desktop-workstation': 0.25
 			}[cpu];
 			
@@ -1596,10 +1606,13 @@ button:active {
 				'desktop-low': 20,
 				'desktop-mid': 12,
 				'desktop-high': 9,
-				'desktop-premium': 7,
-				'desktop-hedt': 5,
+				'desktop-premium-12': 8,
+				'desktop-premium-16': 7,
+				'desktop-hedt-16': 6,
+				'desktop-hedt-32': 5,
 				'desktop-workstation': 3
 			}[cpu];
+
 			
 			const nvencBenefit = usingNvenc ? 8 : 0;
 			
