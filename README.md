@@ -82,10 +82,6 @@ Contributions to the VDO.Ninja Performance Estimator are welcome! Please feel fr
 - [VDO.Ninja](https://github.com/steveseguin/vdo.ninja) - The main VDO.Ninja repository
 - [VDO.Ninja Documentation](https://docs.vdo.ninja) - Official documentation
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ## Acknowledgments
 
 - Built by [Steve Seguin](https://github.com/steveseguin), the creator of VDO.Ninja
