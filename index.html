@@ -436,10 +436,20 @@ button:active {
                                 </span>
                             </label>
                             <select id="cpu">
-                                <option value="low">Low-end (2-4 cores, <2.5GHz)</option>
-                                <option value="mid" selected>Mid-range (4-6 cores, 2.5-3.5GHz)</option>
-                                <option value="high">High-end (8+ cores, >3.5GHz)</option>
-                                <option value="threadripper">Threadripper/HEDT (16+ cores)</option>
+                                <optgroup label="Laptop">
+									<option value="laptop-low">2-4 cores (older gen, i3/Ryzen 3)</option>
+									<option value="laptop-mid">4-6 cores (mid-gen, i5/Ryzen 5)</option>
+									<option value="laptop-high">6-8 cores (newer gen, i7/Ryzen 7)</option>
+									<option value="laptop-premium">8+ cores (i9/Ryzen 9)</option>
+								</optgroup>
+								<optgroup label="Desktop">
+									<option value="desktop-low">4 cores (older gen, i3/Ryzen 3)</option>
+									<option value="desktop-mid" selected>6 cores (mid-gen, i5/Ryzen 5)</option>
+									<option value="desktop-high">8 cores (newer gen, i7/Ryzen 7)</option>
+									<option value="desktop-premium">12-16 cores (i9/Ryzen 9)</option>
+									<option value="desktop-hedt">16-32 cores (Threadripper/HEDT)</option>
+									<option value="desktop-workstation">32+ cores (Threadripper Pro/Xeon)</option>
+								</optgroup>
                             </select>
                         </div>
                         <div class="form-group">
@@ -884,109 +894,109 @@ button:active {
         }
 
         function applyPreset(presetName) {
-            // Define the presets
-            const presets = {
-                'basic-streaming': {
-                    // System configuration
-                    'cpu': 'mid',
-                    'gpu': 'mid',
-                    'ram': 16,
-                    'upload': 10,
-                    'obs-nvenc': 'yes',
-                    'browser': 'chrome',
-                    'os': 'windows',
-                    'cpu-usage': 20,
-                    // Session configuration
-                    'operation-mode': 'broadcast',
-                    'resolution': '720',
-                    'framerate': '30',
-                    'codec': 'h264',
-                    'connections': 5,
-                    'bitrate': 2500,
-                    'audio-only': 0,
-                    'scene-complexity': 'medium'
-                },
-                'gaming-broadcast': {
-                    // System configuration
-                    'cpu': 'high',
-                    'gpu': 'high',
-                    'ram': 32,
-                    'upload': 15,
-                    'obs-nvenc': 'yes',
-                    'browser': 'chrome',
-                    'os': 'windows',
-                    'cpu-usage': 30,
-                    // Session configuration
-                    'operation-mode': 'meshcast',
-                    'resolution': '1080',
-                    'framerate': '60',
-                    'codec': 'h264',
-                    'connections': 10,
-                    'bitrate': 6000,
-                    'audio-only': 0,
-                    'scene-complexity': 'high'
-                },
-                'group-call': {
-                    // System configuration
-                    'cpu': 'mid',
-                    'gpu': 'mid',
-                    'ram': 16,
-                    'upload': 8,
-                    'obs-nvenc': 'yes',
-                    'browser': 'chrome',
-                    'os': 'windows',
-                    'cpu-usage': 15,
-                    // Session configuration
-                    'operation-mode': 'group',
-                    'resolution': '720',
-                    'framerate': '30',
-                    'codec': 'vp8',
-                    'connections': 8,
-                    'bitrate': 2000,
-                    'audio-only': 2,
-                    'scene-complexity': 'medium'
-                },
-                'low-resource': {
-                    // System configuration
-                    'cpu': 'low',
-                    'gpu': 'low',
-                    'ram': 8,
-                    'upload': 5,
-                    'obs-nvenc': 'yes',
-                    'browser': 'chrome',
-                    'os': 'windows',
-                    'cpu-usage': 25,
-                    // Session configuration
-                    'operation-mode': 'meshcast',
-                    'resolution': '480',
-                    'framerate': '30',
-                    'codec': 'h264',
-                    'connections': 3,
-                    'bitrate': 1500,
-                    'audio-only': 1,
-                    'scene-complexity': 'low'
-                },
-                'high-quality': {
-                    // System configuration
-                    'cpu': 'high',
-                    'gpu': 'high',
-                    'ram': 32,
-                    'upload': 25,
-                    'obs-nvenc': 'yes',
-                    'browser': 'chrome',
-                    'os': 'windows',
-                    'cpu-usage': 10,
-                    // Session configuration
-                    'operation-mode': 'meshcast',
-                    'resolution': '1080',
-                    'framerate': '60',
-                    'codec': 'h264',
-                    'connections': 15,
-                    'bitrate': 6000,
-                    'audio-only': 0,
-                    'scene-complexity': 'high'
-                }
-            };
+			// Define the presets
+			const presets = {
+				'basic-streaming': {
+					// System configuration
+					'cpu': 'desktop-mid',
+					'gpu': 'mid',
+					'ram': 16,
+					'upload': 10,
+					'obs-nvenc': 'yes',
+					'browser': 'chrome',
+					'os': 'windows',
+					'cpu-usage': 20,
+					// Session configuration
+					'operation-mode': 'broadcast',
+					'resolution': '720',
+					'framerate': '30',
+					'codec': 'h264',
+					'connections': 5,
+					'bitrate': 2500,
+					'audio-only': 0,
+					'scene-complexity': 'medium'
+				},
+				'gaming-broadcast': {
+					// System configuration
+					'cpu': 'desktop-high',
+					'gpu': 'high',
+					'ram': 32,
+					'upload': 15,
+					'obs-nvenc': 'yes',
+					'browser': 'chrome',
+					'os': 'windows',
+					'cpu-usage': 30,
+					// Session configuration
+					'operation-mode': 'meshcast',
+					'resolution': '1080',
+					'framerate': '60',
+					'codec': 'h264',
+					'connections': 10,
+					'bitrate': 6000,
+					'audio-only': 0,
+					'scene-complexity': 'high'
+				},
+				'group-call': {
+					// System configuration
+					'cpu': 'desktop-mid',
+					'gpu': 'mid',
+					'ram': 16,
+					'upload': 8,
+					'obs-nvenc': 'yes',
+					'browser': 'chrome',
+					'os': 'windows',
+					'cpu-usage': 15,
+					// Session configuration
+					'operation-mode': 'group',
+					'resolution': '720',
+					'framerate': '30',
+					'codec': 'vp8',
+					'connections': 8,
+					'bitrate': 2000,
+					'audio-only': 2,
+					'scene-complexity': 'medium'
+				},
+				'low-resource': {
+					// System configuration
+					'cpu': 'laptop-mid',
+					'gpu': 'low',
+					'ram': 8,
+					'upload': 5,
+					'obs-nvenc': 'yes',
+					'browser': 'chrome',
+					'os': 'windows',
+					'cpu-usage': 25,
+					// Session configuration
+					'operation-mode': 'meshcast',
+					'resolution': '480',
+					'framerate': '30',
+					'codec': 'h264',
+					'connections': 3,
+					'bitrate': 1500,
+					'audio-only': 1,
+					'scene-complexity': 'low'
+				},
+				'high-quality': {
+					// System configuration
+					'cpu': 'desktop-premium',
+					'gpu': 'high',
+					'ram': 32,
+					'upload': 25,
+					'obs-nvenc': 'yes',
+					'browser': 'chrome',
+					'os': 'windows',
+					'cpu-usage': 10,
+					// Session configuration
+					'operation-mode': 'meshcast',
+					'resolution': '1080',
+					'framerate': '60',
+					'codec': 'h264',
+					'connections': 15,
+					'bitrate': 6000,
+					'audio-only': 0,
+					'scene-complexity': 'high'
+				}
+			};
             
             // Get the selected preset
             const preset = presets[presetName];
@@ -1109,12 +1119,20 @@ button:active {
 				'high': 1.5
 			}[sceneComplexity];
 			
-			// CPU multiplier based on CPU power
+			// CPU multiplier based on CPU power (updated for new options)
 			const cpuPowerMultiplier = {
-				'low': 2.5,
-				'mid': 1.2,
-				'high': 0.8,
-				'threadripper': 0.5
+				// Laptops (thermal constrained, lower clocks)
+				'laptop-low': 3.0,
+				'laptop-mid': 2.0,
+				'laptop-high': 1.5,
+				'laptop-premium': 1.2,
+				// Desktops (better cooling, higher sustained clocks)
+				'desktop-low': 2.2,
+				'desktop-mid': 1.2,
+				'desktop-high': 0.9,
+				'desktop-premium': 0.6,
+				'desktop-hedt': 0.4,
+				'desktop-workstation': 0.25
 			}[cpu];
 			
 			// Operation mode affects how connections scale
@@ -1138,10 +1156,18 @@ button:active {
 			
 			// Add base OBS CPU usage (varies based on CPU power)
 			const obsBaseCpuUsage = {
-				'low': 20,
-				'mid': 12,
-				'high': 8,
-				'threadripper': 5
+				// Laptops
+				'laptop-low': 25,
+				'laptop-mid': 18,
+				'laptop-high': 15,
+				'laptop-premium': 12,
+				// Desktops
+				'desktop-low': 20,
+				'desktop-mid': 12,
+				'desktop-high': 9,
+				'desktop-premium': 7,
+				'desktop-hedt': 5,
+				'desktop-workstation': 3
 			}[cpu];
 			
 			// NVENC only reduces OBS encoding load, not WebRTC load
