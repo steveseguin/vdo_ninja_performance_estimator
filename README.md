@@ -4,7 +4,7 @@
 
 A web-based tool to estimate if your system can handle [VDO.Ninja](https://vdo.ninja) sessions based on your hardware specifications and configuration.
 
-**Live Demo:** [https://steveseguin.github.io/vdo_ninja_performance_estimator/](https://steveseguin.github.io/vdo_ninja_performance_estimator/)
+**Live Demo:** [https://calculator.vdo.ninja/](https://calculator.vdo.ninja)
 
 ![image](https://github.com/user-attachments/assets/fc6bcdec-dc6e-46e7-bf1b-d6925b9ab313)
 
