@@ -1084,177 +1084,167 @@ button:active {
         }
         
         function calculateCpuLoad(cpu, operationMode, resolution, framerate, codec, connections, sceneComplexity, usingNvenc, otherCpuUsage) {
-            // Base CPU load per connection based on resolution and framerate
-            let baseCpuLoadPerConnection = {
-                '360': { '15': 5, '30': 8, '60': 15 },
-                '480': { '15': 8, '30': 12, '60': 20 },
-                '720': { '15': 12, '30': 18, '60': 30 },
-                '1080': { '15': 18, '30': 25, '60': 45 },
-                '1440': { '15': 25, '30': 35, '60': 60 },
-                '4k': { '15': 35, '30': 60, '60': 100 }
-            }[resolution][framerate.toString()];
-            
-            // CPU multiplier based on codec
-            const codecCpuMultiplier = {
-                'vp8': 1.0,
-                'h264': 0.9,  // Slightly more efficient
-                'vp9': 1.5,   // More CPU intensive
-                'av1': 2.0    // Most CPU intensive
-            }[codec];
-            
-            // CPU multiplier based on scene complexity
-            const complexityMultiplier = {
-                'low': 0.8,
-                'medium': 1.0,
-                'high': 1.3
-            }[sceneComplexity];
-            
-            // CPU multiplier based on CPU power
-            const cpuPowerMultiplier = {
-                'low': 2.0,
-                'mid': 1.0,
-                'high': 0.6,
-                'threadripper': 0.4
-            }[cpu];
-            
-            // Operation mode affects how many encoding instances we need
-            let modeMultiplier = 1.0;
-            if (operationMode === 'p2p') {
-                // P2P requires separate encoding for each connection
-                modeMultiplier = 1.0;
-            } else if (operationMode === 'group') {
-                // Group rooms are more efficient but still have overhead
-                modeMultiplier = 0.8;
-            } else if (operationMode === 'broadcast') {
-                // Broadcasting mode reduces connections
-                modeMultiplier = 0.7;
-            } else if (operationMode === 'meshcast') {
-                // Meshcast significantly reduces CPU load
-                modeMultiplier = 0.3;
-            }
-            
-            // NVENC significantly reduces CPU load for encoding
-            const nvencMultiplier = usingNvenc ? 0.4 : 1.0;
-            
-            // Calculate per-connection CPU load
-            let perConnectionLoad = baseCpuLoadPerConnection * codecCpuMultiplier * complexityMultiplier * cpuPowerMultiplier * nvencMultiplier;
-            
-            // Calculate total CPU load from connections
-            let totalCpuLoad = perConnectionLoad * connections * modeMultiplier;
-            
-            // Add base OBS CPU usage (varies based on CPU power)
-            const obsBaseCpuUsage = {
-                'low': 15,
-                'mid': 8,
-                'high': 5,
-                'threadripper': 3
-            }[cpu];
-            
-            totalCpuLoad += obsBaseCpuUsage;
-            
-            // Add other CPU usage
-            totalCpuLoad += otherCpuUsage;
-            
-            // Clamp to reasonable values
-            return Math.min(Math.max(totalCpuLoad, 5), 150);
-        }
+			// Base CPU load per connection - higher since WebRTC encoding is CPU intensive
+			let baseCpuLoadPerConnection = {
+				'360': { '15': 8, '30': 12, '60': 18 },
+				'480': { '15': 12, '30': 18, '60': 25 },
+				'720': { '15': 18, '30': 25, '60': 40 },
+				'1080': { '15': 25, '30': 40, '60': 65 },
+				'1440': { '15': 40, '30': 65, '60': 100 },
+				'4k': { '15': 65, '30': 100, '60': 150 }
+			}[resolution][framerate.toString()];
+			
+			// CPU multiplier based on codec
+			const codecCpuMultiplier = {
+				'vp8': 1.0,
+				'h264': 1.0,  // Most browsers use similar CPU for h264 in WebRTC
+				'vp9': 1.8,   // More CPU intensive
+				'av1': 2.5    // Most CPU intensive
+			}[codec];
+			
+			// CPU multiplier based on scene complexity
+			const complexityMultiplier = {
+				'low': 0.8,
+				'medium': 1.0,
+				'high': 1.5
+			}[sceneComplexity];
+			
+			// CPU multiplier based on CPU power
+			const cpuPowerMultiplier = {
+				'low': 2.5,
+				'mid': 1.2,
+				'high': 0.8,
+				'threadripper': 0.5
+			}[cpu];
+			
+			// Operation mode affects how connections scale
+			let connectionFactor;
+			if (operationMode === 'p2p') {
+				// P2P connection count has linear impact
+				connectionFactor = connections;
+			} else if (operationMode === 'group') {
+				// Group rooms still have significant overhead
+				connectionFactor = Math.max(connections * 0.8, 1);
+			} else if (operationMode === 'broadcast') {
+				// Broadcasting still requires encoding for each connection
+				connectionFactor = Math.max(connections * 0.7, 1);
+			} else if (operationMode === 'meshcast') {
+				// Meshcast has better efficiency but still scales with connections
+				connectionFactor = Math.max(Math.sqrt(connections) * 1.5, 1);
+			}
+			
+			// Calculate WebRTC load (not affected by NVENC)
+			let webrtcCpuLoad = baseCpuLoadPerConnection * codecCpuMultiplier * complexityMultiplier * cpuPowerMultiplier * connectionFactor;
+			
+			// Add base OBS CPU usage (varies based on CPU power)
+			const obsBaseCpuUsage = {
+				'low': 20,
+				'mid': 12,
+				'high': 8,
+				'threadripper': 5
+			}[cpu];
+			
+			// NVENC only reduces OBS encoding load, not WebRTC load
+			const nvencBenefit = usingNvenc ? 8 : 0;  // Fixed benefit for OBS stream
+			
+			let totalCpuLoad = webrtcCpuLoad + obsBaseCpuUsage - nvencBenefit;
+			
+			// Add other CPU usage
+			totalCpuLoad += otherCpuUsage;
+			
+			// Clamp to reasonable values
+			return Math.min(Math.max(totalCpuLoad, 5), 150);
+		}
         
         function calculateGpuLoad(gpu, operationMode, resolution, framerate, codec, connections, sceneComplexity, usingNvenc) {
-            // If no GPU or integrated graphics, return minimal load
-            if (gpu === 'none') {
-                return 10; // Minimal GPU usage for display only
-            }
-            
-            // Base GPU load based on resolution and framerate for decoding
-            let baseGpuLoad = {
-                '360': { '15': 2, '30': 3, '60': 5 },
-                '480': { '15': 3, '30': 5, '60': 8 },
-                '720': { '15': 5, '30': 8, '60': 15 },
-                '1080': { '15': 8, '30': 12, '60': 20 },
-                '1440': { '15': 12, '30': 18, '60': 30 },
-                '4k': { '15': 18, '30': 30, '60': 50 }
-            }[resolution][framerate.toString()];
-            
-            // GPU power multiplier
-            const gpuPowerMultiplier = {
-                'low': 2.0,
-                'mid': 1.0,
-                'high': 0.7,
-                'pro': 0.5
-            }[gpu];
-            
-            // NVENC uses dedicated encoder on GPU
-            let nvencLoad = 0;
-            if (usingNvenc) {
-                // NVENC load based on resolution and framerate
-                nvencLoad = {
-                    '360': { '15': 3, '30': 5, '60': 8 },
-                    '480': { '15': 5, '30': 8, '60': 12 },
-                    '720': { '15': 8, '30': 12, '60': 18 },
-                    '1080': { '15': 12, '30': 18, '60': 25 },
-                    '1440': { '15': 18, '30': 25, '60': 35 },
-                    '4k': { '15': 25, '30': 40, '60': 60 }
-                }[resolution][framerate.toString()];
-                
-                // Scale by number of connections for P2P mode
-                if (operationMode === 'p2p') {
-                    // NVENC has limits on parallel encoding sessions
-                    nvencLoad = Math.min(nvencLoad * connections, nvencLoad * 3);
-                } else {
-                    // Other modes typically only need one encoding session
-                    nvencLoad = nvencLoad;
-                }
-            }
-            
-            // Scene complexity affects GPU load
-            const complexityMultiplier = {
-                'low': 0.8,
-                'medium': 1.0,
-                'high': 1.3
-            }[sceneComplexity];
-            
-            // Base GPU load for video processing
-            let totalGpuLoad = baseGpuLoad * connections * gpuPowerMultiplier * complexityMultiplier;
-            
-            // Add NVENC load if using it
-            totalGpuLoad += nvencLoad;
-            
-            // Add base OBS GPU usage
-            totalGpuLoad += 5;
-            
-            // Clamp to reasonable values
-            return Math.min(Math.max(totalGpuLoad, 5), 150);
-        }
+			// If no GPU or integrated graphics, return minimal load
+			if (gpu === 'none') {
+				return 10; // Minimal GPU usage for display only
+			}
+			
+			// GPU power multiplier
+			const gpuPowerMultiplier = {
+				'low': 2.0,
+				'mid': 1.0,
+				'high': 0.7,
+				'pro': 0.5
+			}[gpu];
+			
+			// Base GPU load for OBS preview and display
+			let totalGpuLoad = 5;
+			
+			// Only add NVENC load if using it for RTMP output, not affected by connection count
+			if (usingNvenc) {
+				// NVENC load based on resolution and framerate (only for RTMP stream, not WebRTC)
+				const nvencLoad = {
+					'360': { '15': 3, '30': 5, '60': 8 },
+					'480': { '15': 5, '30': 8, '60': 12 },
+					'720': { '15': 8, '30': 12, '60': 18 },
+					'1080': { '15': 12, '30': 18, '60': 25 },
+					'1440': { '15': 18, '30': 25, '60': 35 },
+					'4k': { '15': 25, '30': 40, '60': 60 }
+				}[resolution][framerate.toString()];
+				
+				// Add a single NVENC encoding session regardless of connection count
+				totalGpuLoad += nvencLoad;
+			}
+			
+			// Add small load for WebRTC video processing and compositing
+			// This is much smaller since WebRTC encoding is primarily CPU-bound
+			const webrtcGpuLoad = 2 * connections * gpuPowerMultiplier;
+			totalGpuLoad += webrtcGpuLoad;
+			
+			// Scene complexity affects GPU load for compositing and preview
+			const complexityMultiplier = {
+				'low': 0.8,
+				'medium': 1.0,
+				'high': 1.3
+			}[sceneComplexity];
+			
+			totalGpuLoad *= complexityMultiplier;
+			
+			// Clamp to reasonable values
+			return Math.min(Math.max(totalGpuLoad, 5), 150);
+		}
         
         function calculateNetworkLoad(uploadSpeed, operationMode, resolution, framerate, codec, connections, audioOnly, bitrate) {
-            // Calculate total video bitrate based on connections
-            const videoConnections = connections - audioOnly;
-            
-            // Base bitrate for the specified bitrate
-            let totalBitrate = bitrate * videoConnections; // in Kbps
-            
-            // Audio bitrate (typically 64-128 Kbps per connection)
-            const audioBitrate = 96; // in Kbps
-            totalBitrate += audioBitrate * connections;
-            
-            // Operation mode affects network usage
-            if (operationMode === 'meshcast') {
-                // With Meshcast, we only upload once regardless of viewer count
-                totalBitrate = bitrate + (audioBitrate * connections);
-            } else if (operationMode === 'broadcast') {
-                // Broadcasting is more efficient than P2P
-                totalBitrate = bitrate * Math.min(videoConnections, 1.5) + (audioBitrate * connections);
-            }
-            
-            // Convert to Mbps for calculation with uploadSpeed
-            const totalMbps = totalBitrate / 1000;
-            
-            // Calculate percentage of upload bandwidth used
-            const percentUsed = (totalMbps / uploadSpeed) * 100;
-            
-            // Clamp to reasonable values
-            return Math.min(Math.max(percentUsed, 5), 150);
-        }
+			// Calculate video connections
+			const videoConnections = connections - audioOnly;
+			
+			// WebRTC has overhead beyond just the bitrate
+			const webrtcOverheadFactor = 1.2;  // 20% overhead for WebRTC
+			
+			// Base bitrate calculation
+			let totalBitrate = 0;
+			
+			// Calculate based on operation mode
+			if (operationMode === 'p2p') {
+				// In P2P, we need to send separate streams to each viewer
+				totalBitrate = bitrate * videoConnections * webrtcOverheadFactor;
+			} else if (operationMode === 'group') {
+				// Group is similar to P2P but with some optimization
+				totalBitrate = bitrate * videoConnections * 0.9 * webrtcOverheadFactor;
+			} else if (operationMode === 'broadcast') {
+				// Broadcasting still sends to each viewer but with better efficiency
+				totalBitrate = bitrate * videoConnections * 0.85 * webrtcOverheadFactor;
+			} else if (operationMode === 'meshcast') {
+				// Meshcast sends once but still has some scaling with viewers
+				totalBitrate = bitrate * (1 + (videoConnections * 0.1)) * webrtcOverheadFactor;
+			}
+			
+			// Audio bitrate (typically 64-128 Kbps per connection)
+			const audioBitrate = 96; // in Kbps
+			totalBitrate += audioBitrate * connections * webrtcOverheadFactor;
+			
+			// Convert to Mbps for calculation with uploadSpeed
+			const totalMbps = totalBitrate / 1000;
+			
+			// Calculate percentage of upload bandwidth used
+			const percentUsed = (totalMbps / uploadSpeed) * 100;
+			
+			// Clamp to reasonable values
+			return Math.min(Math.max(percentUsed, 5), 150);
+		}
         
         function generateCpuAnalysis(cpuLoad, operationMode, usingNvenc) {
             if (cpuLoad < 50) {
@@ -1321,49 +1311,38 @@ button:active {
             const recommendationsList = [];
             
             // CPU recommendations
-            if (cpuLoad > 80) {
-                if (operationMode === 'p2p' || operationMode === 'group') {
-                    recommendationsList.push("Switch to Meshcast/SFU mode to significantly reduce CPU load");
-                }
-                if (!usingNvenc && codec !== 'av1' && codec !== 'vp9') {
-                    recommendationsList.push("Enable NVENC in OBS if you have a compatible NVIDIA GPU");
-                }
-                if (resolution === '1080' || resolution === '1440' || resolution === '4k') {
-                    recommendationsList.push("Reduce video resolution to decrease encoding load");
-                }
-                if (framerate === '60') {
-                    recommendationsList.push("Reduce framerate to 30fps to decrease encoding load");
-                }
-                if (connections > 3 && operationMode === 'p2p') {
-                    recommendationsList.push("Reduce the number of connections or convert some to audio-only");
-                }
-                if (codec === 'av1' || codec === 'vp9') {
-                    recommendationsList.push("Switch to a less CPU-intensive codec like H.264 or VP8");
-                }
-            }
+			if (cpuLoad > 80) {
+				if (operationMode === 'p2p' || operationMode === 'group') {
+					recommendationsList.push("Switch to Meshcast/SFU mode to reduce CPU load from multiple WebRTC connections");
+				}
+				if (!usingNvenc && codec !== 'av1' && codec !== 'vp9') {
+					recommendationsList.push("Enable NVENC in OBS to reduce CPU load for RTMP output (WebRTC will still use CPU)");
+				}
+				if (resolution === '1080' || resolution === '1440' || resolution === '4k') {
+					recommendationsList.push("Reduce video resolution to decrease WebRTC encoding load on CPU");
+				}
+				if (framerate === '60') {
+					recommendationsList.push("Reduce framerate to 30fps to significantly decrease CPU encoding load");
+				}
+				recommendationsList.push("Close unnecessary background applications to free up CPU resources");
+			}
             
             // GPU recommendations
-            if (gpuLoad > 80 && usingNvenc) {
-                if (resolution === '1080' || resolution === '1440' || resolution === '4k') {
-                    recommendationsList.push("Reduce video resolution to decrease NVENC encoder load");
-                }
-                if (connections > 3 && operationMode === 'p2p') {
-                    recommendationsList.push("NVENC typically supports 3 simultaneous encoding sessions; consider switching to Meshcast mode");
-                }
-            }
+            if (gpuLoad > 80) {
+				recommendationsList.push("GPU load is primarily for OBS preview and composition; consider reducing scene complexity");
+				if (usingNvenc && (resolution === '1440' || resolution === '4k')) {
+					recommendationsList.push("Lower output resolution to reduce NVENC encoding load");
+				}
+			}
             
             // Network recommendations
-            if (networkLoad > 80) {
-                if (operationMode === 'p2p' || operationMode === 'group') {
-                    recommendationsList.push("Switch to Meshcast/SFU mode to significantly reduce upload bandwidth usage");
-                }
-                if (bitrate > 2500) {
-                    recommendationsList.push("Reduce video bitrate to decrease bandwidth usage");
-                }
-                if (resolution === '1080' || resolution === '1440' || resolution === '4k') {
-                    recommendationsList.push("Reduce video resolution to allow for lower bitrates");
-                }
-            }
+            if (networkLoad > 90) {
+				if (operationMode === 'p2p') {
+					recommendationsList.push("WebRTC P2P mode requires sending separate streams to each viewer; switch to Meshcast if possible");
+				}
+				recommendationsList.push("Reduce bitrate to decrease network usage");
+				recommendationsList.push("Consider converting some connections to audio-only");
+			}
             
             // Format recommendations
             let recommendations = "";
