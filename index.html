@@ -707,8 +707,38 @@ button:active {
                     <div id="recommendations"></div>
                 </div>
             </div>
-
+			<div id="process-details" class="card" style="display: none;">
+				<h2>Process Details</h2>
+				<p>Breakdown of all encoding/decoding processes and their resource usage:</p>
+				<div id="process-table-container" style="overflow-x: auto;">
+					<table id="process-table" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+						<thead>
+							<tr>
+								<th style="text-align: left; padding: 8px; border-bottom: 2px solid var(--border-color);">Process</th>
+								<th style="text-align: left; padding: 8px; border-bottom: 2px solid var(--border-color);">Type</th>
+								<th style="text-align: left; padding: 8px; border-bottom: 2px solid var(--border-color);">Application</th>
+								<th style="text-align: left; padding: 8px; border-bottom: 2px solid var(--border-color);">Codec</th>
+								<th style="text-align: left; padding: 8px; border-bottom: 2px solid var(--border-color);">Hardware</th>
+								<th style="text-align: right; padding: 8px; border-bottom: 2px solid var(--border-color);">Resolution</th>
+								<th style="text-align: right; padding: 8px; border-bottom: 2px solid var(--border-color);">FPS</th>
+								<th style="text-align: right; padding: 8px; border-bottom: 2px solid var(--border-color);">Bitrate</th>
+								<th style="text-align: right; padding: 8px; border-bottom: 2px solid var(--border-color);">CPU (Units)</th>
+								<th style="text-align: right; padding: 8px; border-bottom: 2px solid var(--border-color);">CPU (%)</th>
+								<th style="text-align: right; padding: 8px; border-bottom: 2px solid var(--border-color);">GPU (%)</th>
+								<th style="text-align: right; padding: 8px; border-bottom: 2px solid var(--border-color);">Bandwidth</th>
+							</tr>
+						</thead>
+						<tbody id="process-table-body">
+							<!-- Process rows will be inserted here dynamically -->
+						</tbody>
+					</table>
+				</div>
+				<div id="process-summary" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+					<!-- Summary information will be inserted here -->
+				</div>
+			</div>
             <button onclick="openTab(null, 'SessionConfig')">Back: Adjust Configuration</button>
+			<button id="show-details-btn" onclick="toggleDetailsView()">Show Process Details</button>
         </div>
 
         <div id="About" class="tabcontent">
@@ -828,7 +858,336 @@ button:active {
                 bitrateInput.value = 3500;
             }
         }
-        
+        function toggleDetailsView() {
+			const detailsContainer = document.getElementById('process-details');
+			const button = document.getElementById('show-details-btn');
+			
+			if (detailsContainer.style.display === 'none') {
+				detailsContainer.style.display = 'block';
+				button.textContent = 'Hide Process Details';
+				generateProcessDetails();
+			} else {
+				detailsContainer.style.display = 'none';
+				button.textContent = 'Show Process Details';
+			}
+		}
+		function generateProcessDetails() {
+			// Get all the configuration values
+			const cpu = document.getElementById('cpu').value;
+			const gpu = document.getElementById('gpu').value;
+			const operationMode = document.getElementById('operation-mode').value;
+			const resolution = document.getElementById('resolution').value;
+			const framerate = parseInt(document.getElementById('framerate').value);
+			const codec = document.getElementById('codec').value;
+			const connections = parseInt(document.getElementById('connections').value);
+			const bitrate = parseInt(document.getElementById('bitrate').value);
+			const audioOnly = parseInt(document.getElementById('audio-only').value);
+			const sceneComplexity = document.getElementById('scene-complexity').value;
+			const usingNvenc = document.getElementById('obs-nvenc').value === 'yes';
+			const uploadSpeed = parseInt(document.getElementById('upload').value);
+			
+			// Calculate video connections
+			const videoConnections = connections - audioOnly;
+			
+			// Clear the table body
+			const tableBody = document.getElementById('process-table-body');
+			tableBody.innerHTML = '';
+			
+			// CPU power factor for relative CPU usage calculation
+			const cpuPowerFactor = {
+				'laptop-low': 0.33,
+				'laptop-mid': 0.5,
+				'laptop-high': 0.67,
+				'laptop-premium': 0.83,
+				'desktop-low': 0.45,
+				'desktop-mid': 0.83,
+				'desktop-high': 1.1,
+				'desktop-premium': 1.67,
+				'desktop-hedt': 2.5,
+				'desktop-workstation': 4.0
+			}[cpu];
+			
+			// Get resolution values
+			const resolutionValues = {
+				'360': { width: 640, height: 360 },
+				'480': { width: 854, height: 480 },
+				'720': { width: 1280, height: 720 },
+				'1080': { width: 1920, height: 1080 },
+				'1440': { width: 2560, height: 1440 },
+				'4k': { width: 3840, height: 2160 }
+			}[resolution];
+			
+			// Calculate base CPU units for encoding based on resolution & framerate
+			const baseCpuUnitsPerStream = {
+				'360': { '15': 0.6, '30': 1.0, '60': 1.8 },
+				'480': { '15': 1.0, '30': 1.5, '60': 2.5 },
+				'720': { '15': 1.5, '30': 2.5, '60': 4.0 },
+				'1080': { '15': 2.5, '30': 4.0, '60': 6.5 },
+				'1440': { '15': 4.0, '30': 6.5, '60': 10.0 },
+				'4k': { '15': 6.5, '30': 10.0, '60': 15.0 }
+			}[resolution][framerate.toString()];
+			
+			// Codec CPU multipliers
+			const codecCpuMultiplier = {
+				'vp8': 1.0,
+				'h264': 0.9,
+				'vp9': 1.8,
+				'av1': 2.5
+			}[codec];
+			
+			// Complexity multiplier
+			const complexityMultiplier = {
+				'low': 0.8,
+				'medium': 1.0,
+				'high': 1.2
+			}[sceneComplexity];
+			
+			// Calculate processes and their resource usage
+			const processes = [];
+			
+			// Calculate total CPU/GPU/bandwidth used
+			let totalCpuUnits = 0;
+			let totalCpuPercentage = 0;
+			let totalGpuPercentage = 0;
+			let totalBandwidthMbps = 0;
+			
+			// 1. OBS base process
+			const obsBaseCpuUnits = 1.0 * cpuPowerFactor;
+			const obsBaseCpuPercentage = (obsBaseCpuUnits / cpuPowerFactor) * 8;
+			const obsBaseGpuPercentage = 2.0;
+			
+			processes.push({
+				process: 'OBS Base Process',
+				type: 'Application',
+				application: 'OBS',
+				codec: 'N/A',
+				hardware: 'CPU',
+				resolution: 'N/A',
+				fps: 'N/A',
+				bitrate: 'N/A',
+				cpuUnits: obsBaseCpuUnits.toFixed(1),
+				cpuPercentage: obsBaseCpuPercentage.toFixed(1),
+				gpuPercentage: obsBaseGpuPercentage.toFixed(1),
+				bandwidth: '0 Mbps'
+			});
+			
+			totalCpuUnits += obsBaseCpuUnits;
+			totalCpuPercentage += obsBaseCpuPercentage;
+			totalGpuPercentage += obsBaseGpuPercentage;
+			
+			// 2. OBS RTMP encoding (if using NVENC or CPU)
+			const rtmpBitrate = bitrate * 1.1; // 10% overhead
+			const rtmpBandwidth = rtmpBitrate / 1000; // convert to Mbps
+			
+			if (usingNvenc && gpu !== 'none') {
+				// NVENC encoding for RTMP
+				const nvencGpuPercentage = {
+					'low': 20,
+					'mid': 14,
+					'high': 10,
+					'pro': 8
+				}[gpu];
+				
+				const nvencCpuUnits = 0.3 * cpuPowerFactor;
+				const nvencCpuPercentage = (nvencCpuUnits / cpuPowerFactor) * 8;
+				
+				processes.push({
+					process: 'OBS RTMP Stream',
+					type: 'Encode',
+					application: 'OBS',
+					codec: codec.toUpperCase(),
+					hardware: 'NVENC',
+					resolution: `${resolutionValues.width}x${resolutionValues.height}`,
+					fps: framerate,
+					bitrate: `${rtmpBitrate} Kbps`,
+					cpuUnits: nvencCpuUnits.toFixed(1),
+					cpuPercentage: nvencCpuPercentage.toFixed(1),
+					gpuPercentage: nvencGpuPercentage.toFixed(1),
+					bandwidth: `${rtmpBandwidth.toFixed(2)} Mbps`
+				});
+				
+				totalCpuUnits += nvencCpuUnits;
+				totalCpuPercentage += nvencCpuPercentage;
+				totalGpuPercentage += nvencGpuPercentage;
+				totalBandwidthMbps += rtmpBandwidth;
+			} else {
+				// CPU encoding for RTMP
+				const rtmpCpuUnits = baseCpuUnitsPerStream * codecCpuMultiplier * complexityMultiplier;
+				const rtmpCpuPercentage = (rtmpCpuUnits / cpuPowerFactor) * 8;
+				
+				processes.push({
+					process: 'OBS RTMP Stream',
+					type: 'Encode',
+					application: 'OBS',
+					codec: codec.toUpperCase(),
+					hardware: 'CPU',
+					resolution: `${resolutionValues.width}x${resolutionValues.height}`,
+					fps: framerate,
+					bitrate: `${rtmpBitrate} Kbps`,
+					cpuUnits: rtmpCpuUnits.toFixed(1),
+					cpuPercentage: rtmpCpuPercentage.toFixed(1),
+					gpuPercentage: '1.0',
+					bandwidth: `${rtmpBandwidth.toFixed(2)} Mbps`
+				});
+				
+				totalCpuUnits += rtmpCpuUnits;
+				totalCpuPercentage += rtmpCpuPercentage;
+				totalGpuPercentage += 1.0;
+				totalBandwidthMbps += rtmpBandwidth;
+			}
+			
+			// 3. WebRTC processes
+			// Calculate WebRTC connections based on operation mode
+			let webrtcConnections = 0;
+			let webrtcBandwidthMultiplier = 0;
+			
+			if (operationMode === 'p2p') {
+				webrtcConnections = videoConnections;
+				webrtcBandwidthMultiplier = 1.0;
+			} else if (operationMode === 'group') {
+				webrtcConnections = videoConnections;
+				webrtcBandwidthMultiplier = 0.9; // Slight optimization in group mode
+			} else if (operationMode === 'broadcast') {
+				webrtcConnections = videoConnections;
+				webrtcBandwidthMultiplier = 0.85; // More optimization in broadcast mode
+			} else if (operationMode === 'meshcast') {
+				webrtcConnections = 1; // Primary connection to SFU
+				webrtcBandwidthMultiplier = 1.0 + (videoConnections * 0.1);
+			}
+			
+			// WebRTC CPU encoding processes
+			for (let i = 0; i < webrtcConnections; i++) {
+				const webrtcCpuUnits = baseCpuUnitsPerStream * codecCpuMultiplier * complexityMultiplier;
+				const webrtcCpuPercentage = (webrtcCpuUnits / cpuPowerFactor) * 8;
+				const webrtcBitrate = bitrate * webrtcBandwidthMultiplier;
+				const webrtcBandwidth = webrtcBitrate / 1000; // convert to Mbps
+				
+				processes.push({
+					process: `WebRTC Stream ${i+1}`,
+					type: 'Encode',
+					application: 'Browser',
+					codec: codec.toUpperCase(),
+					hardware: 'CPU', // WebRTC typically uses CPU encoding
+					resolution: `${resolutionValues.width}x${resolutionValues.height}`,
+					fps: framerate,
+					bitrate: `${webrtcBitrate.toFixed(0)} Kbps`,
+					cpuUnits: webrtcCpuUnits.toFixed(1),
+					cpuPercentage: webrtcCpuPercentage.toFixed(1),
+					gpuPercentage: '1.0',
+					bandwidth: `${webrtcBandwidth.toFixed(2)} Mbps`
+				});
+				
+				totalCpuUnits += webrtcCpuUnits;
+				totalCpuPercentage += webrtcCpuPercentage;
+				totalGpuPercentage += 1.0;
+				totalBandwidthMbps += webrtcBandwidth;
+			}
+			
+			// 4. Browser base process
+			const browserBaseCpuUnits = 0.5 * cpuPowerFactor;
+			const browserBaseCpuPercentage = (browserBaseCpuUnits / cpuPowerFactor) * 8;
+			const browserBaseGpuPercentage = 1.5;
+			
+			processes.push({
+				process: 'Browser Base Process',
+				type: 'Application',
+				application: 'Browser',
+				codec: 'N/A',
+				hardware: 'CPU',
+				resolution: 'N/A',
+				fps: 'N/A',
+				bitrate: 'N/A',
+				cpuUnits: browserBaseCpuUnits.toFixed(1),
+				cpuPercentage: browserBaseCpuPercentage.toFixed(1),
+				gpuPercentage: browserBaseGpuPercentage.toFixed(1),
+				bandwidth: '0 Mbps'
+			});
+			
+			totalCpuUnits += browserBaseCpuUnits;
+			totalCpuPercentage += browserBaseCpuPercentage;
+			totalGpuPercentage += browserBaseGpuPercentage;
+			
+			// 5. Audio processes
+			if (audioOnly > 0) {
+				const audioBitrate = 96; // Kbps
+				const audioBandwidth = (audioBitrate * audioOnly) / 1000; // Mbps
+				const audioCpuUnits = 0.1 * audioOnly * cpuPowerFactor;
+				const audioCpuPercentage = (audioCpuUnits / cpuPowerFactor) * 8;
+				
+				processes.push({
+					process: `Audio-Only Streams (${audioOnly})`,
+					type: 'Encode',
+					application: 'Browser',
+					codec: 'Opus',
+					hardware: 'CPU',
+					resolution: 'N/A',
+					fps: 'N/A',
+					bitrate: `${audioBitrate} Kbps each`,
+					cpuUnits: audioCpuUnits.toFixed(1),
+					cpuPercentage: audioCpuPercentage.toFixed(1),
+					gpuPercentage: '0.5',
+					bandwidth: `${audioBandwidth.toFixed(2)} Mbps`
+				});
+				
+				totalCpuUnits += audioCpuUnits;
+				totalCpuPercentage += audioCpuPercentage;
+				totalGpuPercentage += 0.5;
+				totalBandwidthMbps += audioBandwidth;
+			}
+			
+			// Render the process details to the table
+			for (const proc of processes) {
+				const row = `
+					<tr style="border-bottom: 1px solid var(--border-color);">
+						<td style="padding: 8px;">${proc.process}</td>
+						<td style="padding: 8px;">${proc.type}</td>
+						<td style="padding: 8px;">${proc.application}</td>
+						<td style="padding: 8px;">${proc.codec}</td>
+						<td style="padding: 8px;">${proc.hardware}</td>
+						<td style="padding: 8px; text-align: right;">${proc.resolution}</td>
+						<td style="padding: 8px; text-align: right;">${proc.fps}</td>
+						<td style="padding: 8px; text-align: right;">${proc.bitrate}</td>
+						<td style="padding: 8px; text-align: right;">${proc.cpuUnits}</td>
+						<td style="padding: 8px; text-align: right;">${proc.cpuPercentage}%</td>
+						<td style="padding: 8px; text-align: right;">${proc.gpuPercentage}%</td>
+						<td style="padding: 8px; text-align: right;">${proc.bandwidth}</td>
+					</tr>
+				`;
+				tableBody.insertAdjacentHTML('beforeend', row);
+			}
+			
+			// Add the total row
+			const totalRow = `
+				<tr style="border-top: 2px solid var(--primary-color); font-weight: bold;">
+					<td style="padding: 8px;">TOTAL</td>
+					<td style="padding: 8px;">-</td>
+					<td style="padding: 8px;">-</td>
+					<td style="padding: 8px;">-</td>
+					<td style="padding: 8px;">-</td>
+					<td style="padding: 8px; text-align: right;">-</td>
+					<td style="padding: 8px; text-align: right;">-</td>
+					<td style="padding: 8px; text-align: right;">-</td>
+					<td style="padding: 8px; text-align: right;">${totalCpuUnits.toFixed(1)}</td>
+					<td style="padding: 8px; text-align: right;">${totalCpuPercentage.toFixed(1)}%</td>
+					<td style="padding: 8px; text-align: right;">${totalGpuPercentage.toFixed(1)}%</td>
+					<td style="padding: 8px; text-align: right;">${totalBandwidthMbps.toFixed(2)} Mbps</td>
+				</tr>
+			`;
+			tableBody.insertAdjacentHTML('beforeend', totalRow);
+			
+			// Add summary information
+			const summary = document.getElementById('process-summary');
+			const uploadPercentage = (totalBandwidthMbps / uploadSpeed) * 100;
+			
+			summary.innerHTML = `
+				<h3>Summary</h3>
+				<p><strong>Total CPU Load:</strong> ${totalCpuPercentage.toFixed(1)}% of available CPU resources (${totalCpuUnits.toFixed(1)} units)</p>
+				<p><strong>Total GPU Load:</strong> ${totalGpuPercentage.toFixed(1)}% of available GPU resources</p>
+				<p><strong>Total Bandwidth:</strong> ${totalBandwidthMbps.toFixed(2)} Mbps (${uploadPercentage.toFixed(1)}% of available ${uploadSpeed} Mbps upload)</p>
+				<p><strong>Performance Impact:</strong> ${getPerformanceImpactText(totalCpuPercentage, totalGpuPercentage, uploadPercentage)}</p>
+			`;
+		}
+
         function updateBitrateBasedOnResolution(resolution) {
             const bitrateInput = document.getElementById('bitrate');
             const framerate = document.getElementById('framerate').value;
@@ -871,7 +1230,24 @@ button:active {
                 }
             }
         }
-
+		function getPerformanceImpactText(cpuPercentage, gpuPercentage, uploadPercentage) {
+			const maxPercentage = Math.max(cpuPercentage, gpuPercentage, uploadPercentage);
+			
+			if (maxPercentage < 50) {
+				return "Low impact - your system should handle this configuration with ease.";
+			} else if (maxPercentage < 80) {
+				return "Moderate impact - your system should handle this configuration adequately.";
+			} else if (maxPercentage < 100) {
+				return "High impact - your system may experience occasional performance issues.";
+			} else {
+				const bottlenecks = [];
+				if (cpuPercentage >= 100) bottlenecks.push("CPU");
+				if (gpuPercentage >= 100) bottlenecks.push("GPU");
+				if (uploadPercentage >= 100) bottlenecks.push("network bandwidth");
+				
+				return `Very high impact - your system will be overloaded. Primary bottleneck(s): ${bottlenecks.join(", ")}.`;
+			}
+		}
         function updateMeter(meterId, value, analysisId, analysisText) {
             const meter = document.getElementById(meterId);
             const analysis = document.getElementById(analysisId);
@@ -1091,6 +1467,10 @@ button:active {
             
             document.getElementById("overall-assessment").textContent = assessment;
             document.getElementById("recommendations").innerHTML = recommendations;
+			
+			if (document.getElementById('process-details').style.display !== 'none') {
+				generateProcessDetails();
+			}
         }
         
         function calculateCpuLoad(cpu, operationMode, resolution, framerate, codec, connections, sceneComplexity, usingNvenc, otherCpuUsage) {
@@ -1148,7 +1528,7 @@ button:active {
 				connectionFactor = Math.max(connections * 0.7, 1);
 			} else if (operationMode === 'meshcast') {
 				// Meshcast has better efficiency but still scales with connections
-				connectionFactor = Math.max(Math.sqrt(connections) * 1.5, 1);
+				connectionFactor = 1 + (connections * 0.05); 
 			}
 			
 			// Calculate WebRTC load (not affected by NVENC)
@@ -1255,7 +1635,7 @@ button:active {
 				totalBitrate = bitrate * videoConnections * 0.85 * webrtcOverheadFactor;
 			} else if (operationMode === 'meshcast') {
 				// Meshcast sends once but still has some scaling with viewers
-				totalBitrate = bitrate * (1 + (videoConnections * 0.1)) * webrtcOverheadFactor;
+				totalBitrate = bitrate * webrtcOverheadFactor;
 			}
 			
 			// Audio bitrate (typically 64-128 Kbps per connection)
