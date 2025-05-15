@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VDO.Ninja Performance Estimator</title>
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --secondary-color: #ff006e;
+            --background-color: #f8f9fa;
+            --card-color: #ffffff;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3, h4 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2a75e6;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-card {
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: var(--card-color);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .warning {
+            border-left-color: var(--secondary-color);
+        }
+
+        .meter-container {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            height: 22px;
+        }
+
+        .meter {
+            height: 100%;
+            border-radius: 4px;
+            text-align: center;
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+            line-height: 22px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .meter-low {
+            background-color: #28a745;
+        }
+
+        .meter-medium {
+            background-color: #ffc107;
+        }
+
+        .meter-high {
+            background-color: #dc3545;
+        }
+
+        .info-text {
+            font-style: italic;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            color: var(--text-color);
+        }
+
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        .tab button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            animation: fadeEffect 1s;
+        }
+
+        @keyframes fadeEffect {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            margin-left: 5px;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VDO.Ninja Performance Estimator</h1>
+        <p>Estimate if your system can handle VDO.Ninja sessions based on your hardware and configuration.</p>
+
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'SystemConfig')">System Configuration</button>
+            <button class="tablinks" onclick="openTab(event, 'SessionConfig')">Session Configuration</button>
+            <button class="tablinks" onclick="openTab(event, 'Results')">Results</button>
+            <button class="tablinks" onclick="openTab(event, 'About')">About</button>
+        </div>
+
+        <div id="SystemConfig" class="tabcontent" style="display: block;">
+            <div class="card">
+                <h2>Hardware Specifications</h2>
+                <div class="grid">
+                    <div>
+                        <div class="form-group">
+                            <label for="cpu">CPU
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Select your CPU model to estimate encoding performance.</span>
+                                </span>
+                            </label>
+                            <select id="cpu">
+                                <option value="low">Low-end (2-4 cores, <2.5GHz)</option>
+                                <option value="mid" selected>Mid-range (4-6 cores, 2.5-3.5GHz)</option>
+                                <option value="high">High-end (8+ cores, >3.5GHz)</option>
+                                <option value="threadripper">Threadripper/HEDT (16+ cores)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="gpu">GPU
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Your GPU determines hardware acceleration capabilities for encoding/decoding.</span>
+                                </span>
+                            </label>
+                            <select id="gpu">
+                                <option value="none">None/Integrated Graphics</option>
+                                <option value="low">Low-end GPU (GT 1030, RX 550)</option>
+                                <option value="mid" selected>Mid-range GPU (GTX 1660, RTX 3050, RX 5600)</option>
+                                <option value="high">High-end GPU (RTX 3070+, RX 6800+)</option>
+                                <option value="pro">Professional GPU (RTX A series, Quadro)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label for="ram">RAM (GB)
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">More RAM helps when running OBS alongside games or other applications.</span>
+                                </span>
+                            </label>
+                            <input type="number" id="ram" min="4" max="128" value="16" step="4">
+                        </div>
+                        <div class="form-group">
+                            <label for="upload">Upload Bandwidth (Mbps)
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Your upload speed limits how many streams you can send and at what quality.</span>
+                                </span>
+                            </label>
+                            <input type="number" id="upload" min="1" max="1000" value="10" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Software Configuration</h2>
+                <div class="grid">
+                    <div>
+                        <div class="form-group">
+                            <label for="obs-nvenc">Using OBS NVENC?
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">NVENC hardware encoding significantly reduces CPU load on NVIDIA GPUs.</span>
+                                </span>
+                            </label>
+                            <select id="obs-nvenc">
+                                <option value="no">No</option>
+                                <option value="yes" selected>Yes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="browser">Browser
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Different browsers have different performance characteristics with WebRTC.</span>
+                                </span>
+                            </label>
+                            <select id="browser">
+                                <option value="chrome" selected>Chrome/Edge/Brave</option>
+                                <option value="firefox">Firefox</option>
+                                <option value="safari">Safari</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label for="os">Operating System
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Different operating systems have different WebRTC and hardware acceleration support.</span>
+                                </span>
+                            </label>
+                            <select id="os">
+                                <option value="windows" selected>Windows</option>
+                                <option value="macos">macOS</option>
+                                <option value="linux">Linux</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cpu-usage">Other CPU Usage (%)
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Estimate how much CPU is being used by applications other than VDO.Ninja/OBS.</span>
+                                </span>
+                            </label>
+                            <input type="number" id="cpu-usage" min="0" max="100" value="20" step="5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Configuration Presets</h2>
+                <p>Start with a recommended preset configuration based on common use cases:</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <button onclick="applyPreset('basic-streaming')">Basic Streaming</button>
+                    <button onclick="applyPreset('gaming-broadcast')">Gaming Broadcast</button>
+                    <button onclick="applyPreset('group-call')">Group Video Call</button>
+                    <button onclick="applyPreset('low-resource')">Low Resource Mode</button>
+                    <button onclick="applyPreset('high-quality')">High Quality Mode</button>
+                </div>
+            </div>
+
+            <button onclick="openTab(null, 'SessionConfig')">Next: Session Configuration</button>
+        </div>
+
+        <div id="SessionConfig" class="tabcontent">
+            <div class="card">
+                <h2>VDO.Ninja Configuration</h2>
+                <div class="grid">
+                    <div>
+                        <div class="form-group">
+                            <label for="operation-mode">Operation Mode
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Different modes have different performance characteristics and connection setups.</span>
+                                </span>
+                            </label>
+                            <select id="operation-mode">
+                                <option value="p2p">P2P (Direct Connections)</option>
+                                <option value="group" selected>Group Room (Mesh Network)</option>
+                                <option value="broadcast">Broadcasting Mode</option>
+                                <option value="meshcast">Using Meshcast/SFU</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="resolution">Video Resolution
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Higher resolutions require more CPU/GPU for encoding and more bandwidth.</span>
+                                </span>
+                            </label>
+                            <select id="resolution">
+                                <option value="360">360p (640x360)</option>
+                                <option value="480">480p (854x480)</option>
+                                <option value="720" selected>720p (1280x720)</option>
+                                <option value="1080">1080p (1920x1080)</option>
+                                <option value="1440">1440p (2560x1440)</option>
+                                <option value="4k">4K (3840x2160)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label for="framerate">Frame Rate (FPS)
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Higher frame rates require more processing power and bandwidth.</span>
+                                </span>
+                            </label>
+                            <select id="framerate">
+                                <option value="15">15 FPS</option>
+                                <option value="30" selected>30 FPS</option>
+                                <option value="60">60 FPS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="codec">Video Codec
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Different codecs have different performance and quality characteristics.</span>
+                                </span>
+                            </label>
+                            <select id="codec">
+                                <option value="vp8" selected>VP8 (Default)</option>
+                                <option value="vp9">VP9</option>
+                                <option value="h264">H.264</option>
+                                <option value="av1">AV1</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Session Details</h2>
+                <div class="grid">
+                    <div>
+                        <div class="form-group">
+                            <label for="connections">Number of Connections/Viewers
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Each connection requires separate processing for encoding in P2P mode.</span>
+                                </span>
+                            </label>
+                            <input type="number" id="connections" min="1" max="100" value="5" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="bitrate">Video Bitrate per Connection (Kbps)
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Higher bitrates improve quality but require more bandwidth and processing.</span>
+                                </span>
+                            </label>
+                            <input type="number" id="bitrate" min="500" max="20000" value="2500" step="500">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label for="audio-only">Audio-Only Connections
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Number of connections that are audio-only, which use less resources.</span>
+                                </span>
+                            </label>
+                            <input type="number" id="audio-only" min="0" max="100" value="0" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="scene-complexity">Content Complexity
+                                <span class="tooltip">?
+                                    <span class="tooltiptext">Complex scenes with lots of motion require more CPU/GPU to encode properly.</span>
+                                </span>
+                            </label>
+                            <select id="scene-complexity">
+                                <option value="low">Low (Static, Few Movements)</option>
+                                <option value="medium" selected>Medium (Normal Video Call)</option>
+                                <option value="high">High (Gaming, Fast Motion)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between;">
+                <button onclick="openTab(null, 'SystemConfig')">Back: System Configuration</button>
+                <button onclick="calculateResults()">Calculate Results</button>
+            </div>
+        </div>
+
+        <div id="Results" class="tabcontent">
+            <div class="card results">
+                <h2>Performance Estimate</h2>
+                <p>Based on your system configuration and VDO.Ninja settings, here's the estimated performance:</p>
+                
+                <div class="result-card">
+                    <h3>CPU Load</h3>
+                    <div class="meter-container">
+                        <div id="cpu-meter" class="meter" style="width: 0%;">0%</div>
+                    </div>
+                    <p id="cpu-analysis"></p>
+                </div>
+                
+                <div class="result-card">
+                    <h3>GPU Load</h3>
+                    <div class="meter-container">
+                        <div id="gpu-meter" class="meter" style="width: 0%;">0%</div>
+                    </div>
+                    <p id="gpu-analysis"></p>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Network Bandwidth</h3>
+                    <div class="meter-container">
+                        <div id="network-meter" class="meter" style="width: 0%;">0%</div>
+                    </div>
+                    <p id="network-analysis"></p>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Overall Assessment</h3>
+                    <p id="overall-assessment"></p>
+                    <div id="recommendations"></div>
+                </div>
+            </div>
+
+            <button onclick="openTab(null, 'SessionConfig')">Back: Adjust Configuration</button>
+        </div>
+
+        <div id="About" class="tabcontent">
+            <div class="card">
+                <h2>About VDO.Ninja Performance Estimator</h2>
+                <p>This tool helps estimate whether your system can handle VDO.Ninja sessions based on your hardware specifications and configured session parameters. It calculates approximate CPU, GPU, and network loads to identify potential bottlenecks.</p>
+                
+                <h3>How It Works</h3>
+                <p>The estimator uses research-based metrics and benchmarks to calculate resource usage for different VDO.Ninja configurations. The calculations take into account:</p>
+                <ul>
+                    <li>CPU/GPU encoding and decoding capabilities</li>
+                    <li>Network bandwidth requirements based on resolution, framerate, and codec</li>
+                    <li>P2P connection overhead for different operation modes</li>
+                    <li>Hardware acceleration benefits from NVENC and other encoders</li>
+                </ul>
+                
+                <h3>Operation Modes</h3>
+                <p>VDO.Ninja supports several operation modes:</p>
+                <ul>
+                    <li><strong>P2P (Direct Connections):</strong> Each viewer gets a direct connection to the publisher, requiring separate encoding for each viewer. This is the most CPU intensive for the publisher when multiple viewers are connected.</li>
+                    <li><strong>Group Room (Mesh Network):</strong> Participants are connected in a mesh network, with each participant potentially sending to and receiving from multiple others. This can distribute the load but still becomes resource-intensive with many participants.</li>
+                    <li><strong>Broadcasting Mode:</strong> One person hosts via VDO.Ninja to multiple viewers. This is more optimized than pure P2P for one-to-many scenarios.</li>
+                    <li><strong>Meshcast/SFU Mode:</strong> Uses a Selective Forwarding Unit to reduce load on the publisher by offloading distribution to a server. This significantly reduces CPU and bandwidth requirements for the publisher, as they only need to encode and upload a single video stream.</li>
+                </ul>
+                
+                <h3>Performance Factors</h3>
+                <p>Key factors that affect VDO.Ninja performance include:</p>
+                <ul>
+                    <li><strong>CPU Performance:</strong> WebRTC is primarily CPU-bound, especially for encoding multiple streams. Each P2P connection requires a separate encoding process.</li>
+                    <li><strong>Hardware Acceleration:</strong> NVENC (on NVIDIA GPUs) can significantly reduce CPU load by offloading encoding to dedicated hardware on the GPU.</li>
+                    <li><strong>Codec Selection:</strong> VP8 is the default and works well for most cases. H.264 may offer hardware acceleration on some devices. VP9 and AV1 provide better quality at lower bitrates but require more CPU.</li>
+                    <li><strong>Resolution and Framerate:</strong> Higher values increase quality but significantly increase CPU/GPU load and bandwidth requirements.</li>
+                    <li><strong>Network Bandwidth:</strong> Upstream bandwidth is a major limiting factor, especially in P2P mode where separate streams are sent to each viewer.</li>
+                    <li><strong>Connection Count:</strong> Each additional connection in P2P mode adds significant CPU load and bandwidth requirements.</li>
+                </ul>
+                
+                <h3>Hardware Acceleration Notes</h3>
+                <p>Hardware acceleration can significantly improve performance:</p>
+                <ul>
+                    <li><strong>NVENC (NVIDIA):</strong> Available on most NVIDIA GPUs from GTX 700 series and newer. RTX GPUs have improved encoders. Typically supports up to 3 simultaneous encoding sessions.</li>
+                    <li><strong>QuickSync (Intel):</strong> Available on Intel CPUs with integrated graphics. Performance varies by generation.</li>
+                    <li><strong>AMD VCE/VCN:</strong> Available on AMD GPUs. Support in browsers may be limited.</li>
+                    <li><strong>Browser Support:</strong> Chrome and Edge typically have the best hardware acceleration support for WebRTC.</li>
+                </ul>
+                
+                <h3>Limitations</h3>
+                <p>This tool provides estimates based on typical performance characteristics. Actual performance may vary based on:</p>
+                <ul>
+                    <li>Specific hardware configurations and optimizations</li>
+                    <li>System background processes</li>
+                    <li>Network conditions and latency</li>
+                    <li>Browser versions and WebRTC implementations</li>
+                </ul>
+                
+                <p>Always test your actual setup before critical productions.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize event handlers when document is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup default values based on operation mode
+            document.getElementById('operation-mode').addEventListener('change', function() {
+                updateBasedOnOperationMode(this.value);
+            });
+            
+            // Setup updates based on resolution
+            document.getElementById('resolution').addEventListener('change', function() {
+                updateBitrateBasedOnResolution(this.value);
+            });
+            
+            // Setup updates based on GPU selection
+            document.getElementById('gpu').addEventListener('change', function() {
+                const gpuValue = this.value;
+                const nvencSelector = document.getElementById('obs-nvenc');
+                
+                // Only enable NVENC for NVIDIA GPUs
+                if (gpuValue === 'none' || gpuValue === 'low' && nvencSelector.value === 'yes') {
+                    nvencSelector.value = 'no';
+                }
+                
+                // Disable NVENC option if no GPU or non-NVIDIA
+                if (gpuValue === 'none') {
+                    nvencSelector.disabled = true;
+                    nvencSelector.value = 'no';
+                } else {
+                    nvencSelector.disabled = false;
+                }
+            });
+            
+            // Initialize defaults
+            updateBasedOnOperationMode(document.getElementById('operation-mode').value);
+            updateBitrateBasedOnResolution(document.getElementById('resolution').value);
+        });
+        
+        function updateBasedOnOperationMode(mode) {
+            const connectionsInput = document.getElementById('connections');
+            const bitrateInput = document.getElementById('bitrate');
+            
+            if (mode === 'p2p') {
+                // P2P typically has fewer connections due to resource requirements
+                connectionsInput.value = Math.min(parseInt(connectionsInput.value), 5);
+                connectionsInput.max = 10;
+                bitrateInput.value = 2500;
+            } else if (mode === 'group') {
+                // Group rooms can handle more but still limited
+                connectionsInput.max = 20;
+                bitrateInput.value = 2000;
+            } else if (mode === 'broadcast') {
+                // Broadcasting can support many viewers
+                connectionsInput.max = 50;
+                bitrateInput.value = 3000;
+            } else if (mode === 'meshcast') {
+                // Meshcast supports many viewers
+                connectionsInput.max = 100;
+                bitrateInput.value = 3500;
+            }
+        }
+        
+        function updateBitrateBasedOnResolution(resolution) {
+            const bitrateInput = document.getElementById('bitrate');
+            const framerate = document.getElementById('framerate').value;
+            
+            // Recommended bitrates based on resolution and framerate
+            const recommendedBitrates = {
+                '360': { '15': 600, '30': 1000, '60': 1500 },
+                '480': { '15': 800, '30': 1500, '60': 2000 },
+                '720': { '15': 1500, '30': 2500, '60': 4000 },
+                '1080': { '15': 2500, '30': 4000, '60': 6000 },
+                '1440': { '15': 6000, '30': 9000, '60': 13500 },
+                '4k': { '15': 13000, '30': 20000, '60': 30000 }
+            };
+            
+            if (recommendedBitrates[resolution] && recommendedBitrates[resolution][framerate]) {
+                bitrateInput.value = recommendedBitrates[resolution][framerate];
+            }
+        }
+
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            
+            if (evt) {
+                evt.currentTarget.className += " active";
+            } else {
+                // Find the button for this tab and make it active
+                for (i = 0; i < tablinks.length; i++) {
+                    if (tablinks[i].textContent.includes(tabName.replace("Config", "").replace("Results", "Results"))) {
+                        tablinks[i].className += " active";
+                    }
+                }
+            }
+        }
+
+        function updateMeter(meterId, value, analysisId, analysisText) {
+            const meter = document.getElementById(meterId);
+            const analysis = document.getElementById(analysisId);
+            
+            // Cap at 100% for display
+            const displayValue = Math.min(value, 100);
+            
+            meter.style.width = displayValue + "%";
+            meter.textContent = displayValue.toFixed(1) + "%";
+            
+            if (value < 70) {
+                meter.className = "meter meter-low";
+            } else if (value < 90) {
+                meter.className = "meter meter-medium";
+            } else {
+                meter.className = "meter meter-high";
+            }
+            
+            analysis.textContent = analysisText;
+        }
+
+        function applyPreset(presetName) {
+            // Define the presets
+            const presets = {
+                'basic-streaming': {
+                    // System configuration
+                    'cpu': 'mid',
+                    'gpu': 'mid',
+                    'ram': 16,
+                    'upload': 10,
+                    'obs-nvenc': 'yes',
+                    'browser': 'chrome',
+                    'os': 'windows',
+                    'cpu-usage': 20,
+                    // Session configuration
+                    'operation-mode': 'broadcast',
+                    'resolution': '720',
+                    'framerate': '30',
+                    'codec': 'h264',
+                    'connections': 5,
+                    'bitrate': 2500,
+                    'audio-only': 0,
+                    'scene-complexity': 'medium'
+                },
+                'gaming-broadcast': {
+                    // System configuration
+                    'cpu': 'high',
+                    'gpu': 'high',
+                    'ram': 32,
+                    'upload': 15,
+                    'obs-nvenc': 'yes',
+                    'browser': 'chrome',
+                    'os': 'windows',
+                    'cpu-usage': 30,
+                    // Session configuration
+                    'operation-mode': 'meshcast',
+                    'resolution': '1080',
+                    'framerate': '60',
+                    'codec': 'h264',
+                    'connections': 10,
+                    'bitrate': 6000,
+                    'audio-only': 0,
+                    'scene-complexity': 'high'
+                },
+                'group-call': {
+                    // System configuration
+                    'cpu': 'mid',
+                    'gpu': 'mid',
+                    'ram': 16,
+                    'upload': 8,
+                    'obs-nvenc': 'yes',
+                    'browser': 'chrome',
+                    'os': 'windows',
+                    'cpu-usage': 15,
+                    // Session configuration
+                    'operation-mode': 'group',
+                    'resolution': '720',
+                    'framerate': '30',
+                    'codec': 'vp8',
+                    'connections': 8,
+                    'bitrate': 2000,
+                    'audio-only': 2,
+                    'scene-complexity': 'medium'
+                },
+                'low-resource': {
+                    // System configuration
+                    'cpu': 'low',
+                    'gpu': 'low',
+                    'ram': 8,
+                    'upload': 5,
+                    'obs-nvenc': 'yes',
+                    'browser': 'chrome',
+                    'os': 'windows',
+                    'cpu-usage': 25,
+                    // Session configuration
+                    'operation-mode': 'meshcast',
+                    'resolution': '480',
+                    'framerate': '30',
+                    'codec': 'h264',
+                    'connections': 3,
+                    'bitrate': 1500,
+                    'audio-only': 1,
+                    'scene-complexity': 'low'
+                },
+                'high-quality': {
+                    // System configuration
+                    'cpu': 'high',
+                    'gpu': 'high',
+                    'ram': 32,
+                    'upload': 25,
+                    'obs-nvenc': 'yes',
+                    'browser': 'chrome',
+                    'os': 'windows',
+                    'cpu-usage': 10,
+                    // Session configuration
+                    'operation-mode': 'meshcast',
+                    'resolution': '1080',
+                    'framerate': '60',
+                    'codec': 'h264',
+                    'connections': 15,
+                    'bitrate': 6000,
+                    'audio-only': 0,
+                    'scene-complexity': 'high'
+                }
+            };
+            
+            // Get the selected preset
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            // Apply system configuration
+            document.getElementById('cpu').value = preset['cpu'];
+            document.getElementById('gpu').value = preset['gpu'];
+            document.getElementById('ram').value = preset['ram'];
+            document.getElementById('upload').value = preset['upload'];
+            document.getElementById('obs-nvenc').value = preset['obs-nvenc'];
+            document.getElementById('browser').value = preset['browser'];
+            document.getElementById('os').value = preset['os'];
+            document.getElementById('cpu-usage').value = preset['cpu-usage'];
+            
+            // Apply session configuration (will need to switch to the tab first)
+            document.getElementById('operation-mode').value = preset['operation-mode'];
+            document.getElementById('resolution').value = preset['resolution'];
+            document.getElementById('framerate').value = preset['framerate'];
+            document.getElementById('codec').value = preset['codec'];
+            document.getElementById('connections').value = preset['connections'];
+            document.getElementById('bitrate').value = preset['bitrate'];
+            document.getElementById('audio-only').value = preset['audio-only'];
+            document.getElementById('scene-complexity').value = preset['scene-complexity'];
+            
+            // Update any dependent fields
+            updateBasedOnOperationMode(preset['operation-mode']);
+            
+            // Show feedback to user
+            alert(`Applied "${presetName}" preset configuration.`);
+        }
+        
+        function calculateResults() {
+            openTab(null, 'Results');
+            
+            // Get system configuration
+            const cpu = document.getElementById('cpu').value;
+            const gpu = document.getElementById('gpu').value;
+            const ram = parseInt(document.getElementById('ram').value);
+            const uploadSpeed = parseInt(document.getElementById('upload').value);
+            const usingNvenc = document.getElementById('obs-nvenc').value === 'yes';
+            const browser = document.getElementById('browser').value;
+            const os = document.getElementById('os').value;
+            const otherCpuUsage = parseInt(document.getElementById('cpu-usage').value);
+            
+            // Get session configuration
+            const operationMode = document.getElementById('operation-mode').value;
+            const resolution = document.getElementById('resolution').value;
+            const framerate = parseInt(document.getElementById('framerate').value);
+            const codec = document.getElementById('codec').value;
+            const connections = parseInt(document.getElementById('connections').value);
+            const bitrate = parseInt(document.getElementById('bitrate').value); // in Kbps
+            const audioOnly = parseInt(document.getElementById('audio-only').value);
+            const sceneComplexity = document.getElementById('scene-complexity').value;
+            
+            // Calculate video connections (total - audio only)
+            const videoConnections = Math.max(0, connections - audioOnly);
+            
+            // Calculate CPU load
+            let cpuLoad = calculateCpuLoad(
+                cpu, operationMode, resolution, framerate, codec, 
+                videoConnections, sceneComplexity, usingNvenc, otherCpuUsage
+            );
+            
+            // Calculate GPU load
+            let gpuLoad = calculateGpuLoad(
+                gpu, operationMode, resolution, framerate, codec, 
+                videoConnections, sceneComplexity, usingNvenc
+            );
+            
+            // Calculate network load
+            let networkLoad = calculateNetworkLoad(
+                uploadSpeed, operationMode, resolution, framerate, codec, 
+                connections, audioOnly, bitrate
+            );
+            
+            // Generate analysis texts
+            const cpuAnalysis = generateCpuAnalysis(cpuLoad, operationMode, usingNvenc);
+            const gpuAnalysis = generateGpuAnalysis(gpuLoad, gpu, usingNvenc);
+            const networkAnalysis = generateNetworkAnalysis(networkLoad, uploadSpeed, operationMode);
+            
+            // Update meters
+            updateMeter("cpu-meter", cpuLoad, "cpu-analysis", cpuAnalysis);
+            updateMeter("gpu-meter", gpuLoad, "gpu-analysis", gpuAnalysis);
+            updateMeter("network-meter", networkLoad, "network-analysis", networkAnalysis);
+            
+            // Generate overall assessment and recommendations
+            const { assessment, recommendations } = generateOverallAssessment(
+                cpuLoad, gpuLoad, networkLoad, operationMode, resolution, 
+                framerate, connections, bitrate, codec, usingNvenc
+            );
+            
+            document.getElementById("overall-assessment").textContent = assessment;
+            document.getElementById("recommendations").innerHTML = recommendations;
+        }
+        
+        function calculateCpuLoad(cpu, operationMode, resolution, framerate, codec, connections, sceneComplexity, usingNvenc, otherCpuUsage) {
+            // Base CPU load per connection based on resolution and framerate
+            let baseCpuLoadPerConnection = {
+                '360': { '15': 5, '30': 8, '60': 15 },
+                '480': { '15': 8, '30': 12, '60': 20 },
+                '720': { '15': 12, '30': 18, '60': 30 },
+                '1080': { '15': 18, '30': 25, '60': 45 },
+                '1440': { '15': 25, '30': 35, '60': 60 },
+                '4k': { '15': 35, '30': 60, '60': 100 }
+            }[resolution][framerate.toString()];
+            
+            // CPU multiplier based on codec
+            const codecCpuMultiplier = {
+                'vp8': 1.0,
+                'h264': 0.9,  // Slightly more efficient
+                'vp9': 1.5,   // More CPU intensive
+                'av1': 2.0    // Most CPU intensive
+            }[codec];
+            
+            // CPU multiplier based on scene complexity
+            const complexityMultiplier = {
+                'low': 0.8,
+                'medium': 1.0,
+                'high': 1.3
+            }[sceneComplexity];
+            
+            // CPU multiplier based on CPU power
+            const cpuPowerMultiplier = {
+                'low': 2.0,
+                'mid': 1.0,
+                'high': 0.6,
+                'threadripper': 0.4
+            }[cpu];
+            
+            // Operation mode affects how many encoding instances we need
+            let modeMultiplier = 1.0;
+            if (operationMode === 'p2p') {
+                // P2P requires separate encoding for each connection
+                modeMultiplier = 1.0;
+            } else if (operationMode === 'group') {
+                // Group rooms are more efficient but still have overhead
+                modeMultiplier = 0.8;
+            } else if (operationMode === 'broadcast') {
+                // Broadcasting mode reduces connections
+                modeMultiplier = 0.7;
+            } else if (operationMode === 'meshcast') {
+                // Meshcast significantly reduces CPU load
+                modeMultiplier = 0.3;
+            }
+            
+            // NVENC significantly reduces CPU load for encoding
+            const nvencMultiplier = usingNvenc ? 0.4 : 1.0;
+            
+            // Calculate per-connection CPU load
+            let perConnectionLoad = baseCpuLoadPerConnection * codecCpuMultiplier * complexityMultiplier * cpuPowerMultiplier * nvencMultiplier;
+            
+            // Calculate total CPU load from connections
+            let totalCpuLoad = perConnectionLoad * connections * modeMultiplier;
+            
+            // Add base OBS CPU usage (varies based on CPU power)
+            const obsBaseCpuUsage = {
+                'low': 15,
+                'mid': 8,
+                'high': 5,
+                'threadripper': 3
+            }[cpu];
+            
+            totalCpuLoad += obsBaseCpuUsage;
+            
+            // Add other CPU usage
+            totalCpuLoad += otherCpuUsage;
+            
+            // Clamp to reasonable values
+            return Math.min(Math.max(totalCpuLoad, 5), 150);
+        }
+        
+        function calculateGpuLoad(gpu, operationMode, resolution, framerate, codec, connections, sceneComplexity, usingNvenc) {
+            // If no GPU or integrated graphics, return minimal load
+            if (gpu === 'none') {
+                return 10; // Minimal GPU usage for display only
+            }
+            
+            // Base GPU load based on resolution and framerate for decoding
+            let baseGpuLoad = {
+                '360': { '15': 2, '30': 3, '60': 5 },
+                '480': { '15': 3, '30': 5, '60': 8 },
+                '720': { '15': 5, '30': 8, '60': 15 },
+                '1080': { '15': 8, '30': 12, '60': 20 },
+                '1440': { '15': 12, '30': 18, '60': 30 },
+                '4k': { '15': 18, '30': 30, '60': 50 }
+            }[resolution][framerate.toString()];
+            
+            // GPU power multiplier
+            const gpuPowerMultiplier = {
+                'low': 2.0,
+                'mid': 1.0,
+                'high': 0.7,
+                'pro': 0.5
+            }[gpu];
+            
+            // NVENC uses dedicated encoder on GPU
+            let nvencLoad = 0;
+            if (usingNvenc) {
+                // NVENC load based on resolution and framerate
+                nvencLoad = {
+                    '360': { '15': 3, '30': 5, '60': 8 },
+                    '480': { '15': 5, '30': 8, '60': 12 },
+                    '720': { '15': 8, '30': 12, '60': 18 },
+                    '1080': { '15': 12, '30': 18, '60': 25 },
+                    '1440': { '15': 18, '30': 25, '60': 35 },
+                    '4k': { '15': 25, '30': 40, '60': 60 }
+                }[resolution][framerate.toString()];
+                
+                // Scale by number of connections for P2P mode
+                if (operationMode === 'p2p') {
+                    // NVENC has limits on parallel encoding sessions
+                    nvencLoad = Math.min(nvencLoad * connections, nvencLoad * 3);
+                } else {
+                    // Other modes typically only need one encoding session
+                    nvencLoad = nvencLoad;
+                }
+            }
+            
+            // Scene complexity affects GPU load
+            const complexityMultiplier = {
+                'low': 0.8,
+                'medium': 1.0,
+                'high': 1.3
+            }[sceneComplexity];
+            
+            // Base GPU load for video processing
+            let totalGpuLoad = baseGpuLoad * connections * gpuPowerMultiplier * complexityMultiplier;
+            
+            // Add NVENC load if using it
+            totalGpuLoad += nvencLoad;
+            
+            // Add base OBS GPU usage
+            totalGpuLoad += 5;
+            
+            // Clamp to reasonable values
+            return Math.min(Math.max(totalGpuLoad, 5), 150);
+        }
+        
+        function calculateNetworkLoad(uploadSpeed, operationMode, resolution, framerate, codec, connections, audioOnly, bitrate) {
+            // Calculate total video bitrate based on connections
+            const videoConnections = connections - audioOnly;
+            
+            // Base bitrate for the specified bitrate
+            let totalBitrate = bitrate * videoConnections; // in Kbps
+            
+            // Audio bitrate (typically 64-128 Kbps per connection)
+            const audioBitrate = 96; // in Kbps
+            totalBitrate += audioBitrate * connections;
+            
+            // Operation mode affects network usage
+            if (operationMode === 'meshcast') {
+                // With Meshcast, we only upload once regardless of viewer count
+                totalBitrate = bitrate + (audioBitrate * connections);
+            } else if (operationMode === 'broadcast') {
+                // Broadcasting is more efficient than P2P
+                totalBitrate = bitrate * Math.min(videoConnections, 1.5) + (audioBitrate * connections);
+            }
+            
+            // Convert to Mbps for calculation with uploadSpeed
+            const totalMbps = totalBitrate / 1000;
+            
+            // Calculate percentage of upload bandwidth used
+            const percentUsed = (totalMbps / uploadSpeed) * 100;
+            
+            // Clamp to reasonable values
+            return Math.min(Math.max(percentUsed, 5), 150);
+        }
+        
+        function generateCpuAnalysis(cpuLoad, operationMode, usingNvenc) {
+            if (cpuLoad < 50) {
+                return `Your CPU has plenty of headroom (${cpuLoad.toFixed(1)}% estimated load) for this configuration.`;
+            } else if (cpuLoad < 80) {
+                return `Your CPU should handle this configuration adequately (${cpuLoad.toFixed(1)}% estimated load), but you may experience occasional performance issues.`;
+            } else if (cpuLoad < 100) {
+                return `Your CPU is likely to struggle (${cpuLoad.toFixed(1)}% estimated load) with this configuration. Consider ${operationMode === 'meshcast' ? 'reducing resolution or framerate' : 'using Meshcast mode'}.`;
+            } else {
+                return `Your CPU will be overloaded (${cpuLoad.toFixed(1)}% estimated load) with this configuration. ${usingNvenc ? 'Consider reducing connections or resolution.' : 'Enabling NVENC encoding could help if available.'}`;
+            }
+        }
+        
+        function generateGpuAnalysis(gpuLoad, gpu, usingNvenc) {
+            if (gpu === 'none') {
+                return "You're using integrated graphics or no GPU. Hardware acceleration options are limited.";
+            }
+            
+            if (gpuLoad < 50) {
+                return `Your GPU has plenty of headroom (${gpuLoad.toFixed(1)}% estimated load) for this configuration.`;
+            } else if (gpuLoad < 80) {
+                return `Your GPU should handle this configuration adequately (${gpuLoad.toFixed(1)}% estimated load).`;
+            } else if (gpuLoad < 100) {
+                return `Your GPU is likely to be heavily utilized (${gpuLoad.toFixed(1)}% estimated load) with this configuration.`;
+            } else {
+                return `Your GPU will be overloaded (${gpuLoad.toFixed(1)}% estimated load) with this configuration. ${usingNvenc ? 'NVENC encoding may be hitting limits with this many streams.' : ''}`;
+            }
+        }
+        
+        function generateNetworkAnalysis(networkLoad, uploadSpeed, operationMode) {
+            if (networkLoad < 50) {
+                return `Your network has plenty of bandwidth (${networkLoad.toFixed(1)}% of ${uploadSpeed} Mbps) for this configuration.`;
+            } else if (networkLoad < 80) {
+                return `Your network should handle this configuration adequately (${networkLoad.toFixed(1)}% of ${uploadSpeed} Mbps), but leaves limited room for other applications.`;
+            } else if (networkLoad < 100) {
+                return `Your network is likely to be near capacity (${networkLoad.toFixed(1)}% of ${uploadSpeed} Mbps) with this configuration.`;
+            } else {
+                return `Your network will be overloaded (${networkLoad.toFixed(1)}% of ${uploadSpeed} Mbps) with this configuration. ${operationMode !== 'meshcast' ? 'Using Meshcast mode could reduce bandwidth requirements.' : 'Consider reducing bitrate or connections.'}`;
+            }
+        }
+        
+        function generateOverallAssessment(cpuLoad, gpuLoad, networkLoad, operationMode, resolution, framerate, connections, bitrate, codec, usingNvenc) {
+            // Determine the primary bottleneck
+            const bottlenecks = [];
+            if (cpuLoad > 90) bottlenecks.push("CPU");
+            if (gpuLoad > 90) bottlenecks.push("GPU");
+            if (networkLoad > 90) bottlenecks.push("network bandwidth");
+            
+            // Generate assessment based on bottlenecks
+            let assessment = "";
+            if (bottlenecks.length === 0) {
+                if (Math.max(cpuLoad, gpuLoad, networkLoad) > 70) {
+                    assessment = "Your system should handle this configuration, but with limited headroom for additional stress.";
+                } else {
+                    assessment = "Your system should handle this configuration comfortably with good performance.";
+                }
+            } else if (bottlenecks.length === 1) {
+                assessment = `Your ${bottlenecks[0]} is likely to be a bottleneck for this configuration.`;
+            } else {
+                assessment = `Your system has multiple bottlenecks: ${bottlenecks.join(", ")}.`;
+            }
+            
+            // Generate recommendations
+            const recommendationsList = [];
+            
+            // CPU recommendations
+            if (cpuLoad > 80) {
+                if (operationMode === 'p2p' || operationMode === 'group') {
+                    recommendationsList.push("Switch to Meshcast/SFU mode to significantly reduce CPU load");
+                }
+                if (!usingNvenc && codec !== 'av1' && codec !== 'vp9') {
+                    recommendationsList.push("Enable NVENC in OBS if you have a compatible NVIDIA GPU");
+                }
+                if (resolution === '1080' || resolution === '1440' || resolution === '4k') {
+                    recommendationsList.push("Reduce video resolution to decrease encoding load");
+                }
+                if (framerate === '60') {
+                    recommendationsList.push("Reduce framerate to 30fps to decrease encoding load");
+                }
+                if (connections > 3 && operationMode === 'p2p') {
+                    recommendationsList.push("Reduce the number of connections or convert some to audio-only");
+                }
+                if (codec === 'av1' || codec === 'vp9') {
+                    recommendationsList.push("Switch to a less CPU-intensive codec like H.264 or VP8");
+                }
+            }
+            
+            // GPU recommendations
+            if (gpuLoad > 80 && usingNvenc) {
+                if (resolution === '1080' || resolution === '1440' || resolution === '4k') {
+                    recommendationsList.push("Reduce video resolution to decrease NVENC encoder load");
+                }
+                if (connections > 3 && operationMode === 'p2p') {
+                    recommendationsList.push("NVENC typically supports 3 simultaneous encoding sessions; consider switching to Meshcast mode");
+                }
+            }
+            
+            // Network recommendations
+            if (networkLoad > 80) {
+                if (operationMode === 'p2p' || operationMode === 'group') {
+                    recommendationsList.push("Switch to Meshcast/SFU mode to significantly reduce upload bandwidth usage");
+                }
+                if (bitrate > 2500) {
+                    recommendationsList.push("Reduce video bitrate to decrease bandwidth usage");
+                }
+                if (resolution === '1080' || resolution === '1440' || resolution === '4k') {
+                    recommendationsList.push("Reduce video resolution to allow for lower bitrates");
+                }
+            }
+            
+            // Format recommendations
+            let recommendations = "";
+            if (recommendationsList.length > 0) {
+                recommendations = "<h4>Recommendations:</h4><ul>";
+                for (const rec of recommendationsList) {
+                    recommendations += `<li>${rec}</li>`;
+                }
+                recommendations += "</ul>";
+            } else {
+                recommendations = "<p>No specific recommendations needed; your configuration appears appropriate for your system.</p>";
+            }
+            
+            return { assessment, recommendations };
+        }
+    </script>
+</body>
+</html>
