@@ -901,6 +901,9 @@ button:active {
 				framerateSelect.value = '60';
 				codecSelect.value = 'h264';
 			}
+			// Keep audio-only connections within the total after mode-dependent limits.
+			const audioOnlyInput = document.getElementById('audio-only');
+			audioOnlyInput.value = Math.min(parseInt(audioOnlyInput.value), parseInt(connectionsInput.value));
 		}
 		
         function toggleDetailsView() {
@@ -1873,3 +1876,4 @@ button:active {
     </script>
 </body>
 </html>
+
